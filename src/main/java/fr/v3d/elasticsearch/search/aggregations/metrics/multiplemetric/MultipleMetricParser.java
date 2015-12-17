@@ -31,7 +31,7 @@ public class MultipleMetricParser implements Aggregator.Parser {
     }
 
     public static boolean isValidOperator(String operator) {
-    	return (operator.equals(SUM_OPERATOR) || operator.equals(COUNT_OPERATOR));
+        return (operator.equals(SUM_OPERATOR) || operator.equals(COUNT_OPERATOR));
     }
     
     @Override
@@ -45,8 +45,8 @@ public class MultipleMetricParser implements Aggregator.Parser {
             if (token == XContentParser.Token.FIELD_NAME) {
                 currentFieldName = parser.currentName();
             } else if (token == XContentParser.Token.START_OBJECT) {
-            	MultipleMetricParam metric = MultipleMetricParam.parse(aggregationName, parser, context, currentFieldName);
-            	metricsMap.put(currentFieldName, metric);
+                MultipleMetricParam metric = MultipleMetricParam.parse(aggregationName, parser, context, currentFieldName);
+                metricsMap.put(currentFieldName, metric);
             } else {
                 throw new SearchParseException(context, "Unexpected token " + token + " in [" + aggregationName + "]");
             }
@@ -55,19 +55,19 @@ public class MultipleMetricParser implements Aggregator.Parser {
 
         Map<String, ValuesSourceConfig<ValuesSource.Numeric>> configMap = new HashMap<String, ValuesSourceConfig<ValuesSource.Numeric>>();
         for (Entry<String, MultipleMetricParam> entry: metricsMap.entrySet()) {
-        	if (!entry.getValue().isScript()) {
-	        	String field = entry.getValue().field();
-	        	ValuesSourceConfig<ValuesSource.Numeric> config = new ValuesSourceConfig<ValuesSource.Numeric>(ValuesSource.Numeric.class);
-	        	FieldMapper<?> mapper = context.smartNameFieldMapper(field);
-	        	if (mapper == null) {
-	        		config.unmapped(true);
-	        	} else {
-	        		config.fieldContext(new FieldContext(field, context.fieldData().getForField(mapper), mapper));
-	        	}
-	        	configMap.put(entry.getKey(), config);
-        	}
+            if (!entry.getValue().isScript()) {
+                String field = entry.getValue().field();
+                ValuesSourceConfig<ValuesSource.Numeric> config = new ValuesSourceConfig<ValuesSource.Numeric>(ValuesSource.Numeric.class);
+                FieldMapper<?> mapper = context.smartNameFieldMapper(field);
+                if (mapper == null) {
+                    config.unmapped(true);
+                } else {
+                    config.fieldContext(new FieldContext(field, context.fieldData().getForField(mapper), mapper));
+                }
+                configMap.put(entry.getKey(), config);
+            }
         }
         
-    	return new MultipleMetricAggregator.Factory(aggregationName, configMap, metricsMap);
+        return new MultipleMetricAggregator.Factory(aggregationName, configMap, metricsMap);
     }
 }

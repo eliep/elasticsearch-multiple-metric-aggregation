@@ -8,12 +8,12 @@ import fr.v3d.elasticsearch.plugin.multiplemetric.MultipleMetricAggregationTestC
 
 public class MultipleMetricParserTest extends MultipleMetricAggregationTestCase {
 
-	@Test(expectedExceptions=SearchPhaseExecutionException.class)
+    @Test(expectedExceptions=SearchPhaseExecutionException.class)
     public void assertMissingFieldOrScript() throws Exception {
-		String indexName = "index0";
-		int numberOfShards = 1;
-		
-		createIndex(numberOfShards, indexName);
+        String indexName = "index0";
+        int numberOfShards = 1;
+        
+        createIndex(numberOfShards, indexName);
         
         client.prepareSearch("index0").setAggregations(JsonXContent.contentBuilder()
             .startObject()
@@ -25,12 +25,12 @@ public class MultipleMetricParserTest extends MultipleMetricAggregationTestCase 
             .endObject()).execute().actionGet();
     }
 
-	@Test(expectedExceptions=SearchPhaseExecutionException.class)
+    @Test(expectedExceptions=SearchPhaseExecutionException.class)
     public void assertMissingOperator() throws Exception {
-		String indexName = "index1";
-		int numberOfShards = 1;
-		
-		createIndex(numberOfShards, indexName);
+        String indexName = "index1";
+        int numberOfShards = 1;
+        
+        createIndex(numberOfShards, indexName);
         
         client.prepareSearch("index1").setAggregations(JsonXContent.contentBuilder()
             .startObject()
@@ -42,12 +42,12 @@ public class MultipleMetricParserTest extends MultipleMetricAggregationTestCase 
             .endObject()).execute().actionGet();
     }
 
-	@Test(expectedExceptions=SearchPhaseExecutionException.class)
+    @Test(expectedExceptions=SearchPhaseExecutionException.class)
     public void assertUnknownOperator() throws Exception {
-		String indexName = "index2";
-		int numberOfShards = 1;
-		
-		createIndex(numberOfShards, indexName);
+        String indexName = "index2";
+        int numberOfShards = 1;
+        
+        createIndex(numberOfShards, indexName);
         
         client.prepareSearch("index1").setAggregations(JsonXContent.contentBuilder()
             .startObject()

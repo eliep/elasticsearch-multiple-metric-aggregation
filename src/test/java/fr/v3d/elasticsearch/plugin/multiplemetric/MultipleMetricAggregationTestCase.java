@@ -22,7 +22,7 @@ import org.testng.annotations.Test;
 public class MultipleMetricAggregationTestCase extends Assert {
 
 
-	protected final static ESLogger logger = ESLoggerFactory.getLogger("test");
+    protected final static ESLogger logger = ESLoggerFactory.getLogger("test");
 
     protected final String CLUSTER = "test-cluster-" + NetworkUtils.getLocalAddress().getHostName();
 
@@ -66,26 +66,26 @@ public class MultipleMetricAggregationTestCase extends Assert {
     
 
     public void createIndex(int numberOfShards, String indexName) {
-    	client.admin().indices()
-    	.prepareCreate(indexName)
-    	.setSettings(ImmutableSettings.settingsBuilder().put("index.number_of_shards", numberOfShards))
-    	.execute().actionGet();
+        client.admin().indices()
+        .prepareCreate(indexName)
+        .setSettings(ImmutableSettings.settingsBuilder().put("index.number_of_shards", numberOfShards))
+        .execute().actionGet();
     }
     
     public void buildTestDataset(int numberOfShards, String indexName, String typeName, int size, Map<String, Integer> termsFactor) {
-    	createIndex(numberOfShards, indexName);
+        createIndex(numberOfShards, indexName);
         
         
         for (int i=0; i < size; i++) {
-        	for (Map.Entry<String, Integer> entry: termsFactor.entrySet()) {
-	        	for (int j = 0; j < 10; j++) {
-		            Map<String, Object> doc = new HashMap<String, Object>();
-			        doc.put("field0", entry.getKey());
-			        doc.put("value1", j * entry.getValue());
-			        doc.put("value2", j * 10 * entry.getValue());
-			        client.prepareIndex(indexName, typeName, ("doc"+entry.getKey()+i)+j).setSource(doc).setRefresh(true).execute().actionGet();
-	        	}
-        	}
+            for (Map.Entry<String, Integer> entry: termsFactor.entrySet()) {
+                for (int j = 0; j < 10; j++) {
+                    Map<String, Object> doc = new HashMap<String, Object>();
+                    doc.put("field0", entry.getKey());
+                    doc.put("value1", j * entry.getValue());
+                    doc.put("value2", j * 10 * entry.getValue());
+                    client.prepareIndex(indexName, typeName, ("doc"+entry.getKey()+i)+j).setSource(doc).setRefresh(true).execute().actionGet();
+                }
+            }
         }
     }
 }

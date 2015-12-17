@@ -37,9 +37,9 @@ public abstract class MultipleValuesSourceAggregatorFactory<VS extends ValuesSou
     public Aggregator create(AggregationContext context, Aggregator parent, long expectedBucketsCount) {
         Map<String, VS> vsMap = new HashMap<String, VS>();
         for (Entry<String, ValuesSourceConfig<VS>> entry: this.configMap.entrySet()) {
-        	ValuesSourceConfig<VS> config = entry.getValue();
-        	VS vs = !config.unmapped() ? context.valuesSource(config, parent == null ? 0 : 1 + parent.depth()) : null;
-    		vsMap.put(entry.getKey(), vs);
+            ValuesSourceConfig<VS> config = entry.getValue();
+            VS vs = !config.unmapped() ? context.valuesSource(config, parent == null ? 0 : 1 + parent.depth()) : null;
+            vsMap.put(entry.getKey(), vs);
         }
         return create(vsMap, expectedBucketsCount, context, parent);
     }

@@ -36,7 +36,7 @@ public class InternalMultipleMetric extends InternalNumericMetricsAggregation.Mu
     }
     
     public void setScriptService(ScriptService scriptService) {
-    	this.scriptService = scriptService;
+        this.scriptService = scriptService;
     }
     
 
@@ -47,19 +47,19 @@ public class InternalMultipleMetric extends InternalNumericMetricsAggregation.Mu
 
     @Override
     public double getValue(String name) {
-    	return value(name);
+        return value(name);
     }
     
-	@Override
-	public double value(String name) {
-		MultipleMetricParam metric = metricsMap.get(name);
-		Double result = 0.0;
-		result = (metric.isScript())
-			? (Double)scriptService.executable(metric.scriptLang(), metric.script(), metric.scriptType(), paramsMap).run()
-			: paramsMap.get(name);
+    @Override
+    public double value(String name) {
+        MultipleMetricParam metric = metricsMap.get(name);
+        Double result = 0.0;
+        result = (metric.isScript())
+            ? (Double)scriptService.executable(metric.scriptLang(), metric.script(), metric.scriptType(), paramsMap).run()
+            : paramsMap.get(name);
 
-		return result;
-	}
+        return result;
+    }
 
     @Override
     public InternalMultipleMetric reduce(ReduceContext reduceContext) {
@@ -67,27 +67,27 @@ public class InternalMultipleMetric extends InternalNumericMetricsAggregation.Mu
         
         List<InternalAggregation> aggregations = reduceContext.aggregations();
         if (aggregations.size() == 1) {
-        	reduced = (InternalMultipleMetric) aggregations.get(0);
+            reduced = (InternalMultipleMetric) aggregations.get(0);
         } else {
         
-	        for (InternalAggregation aggregation : aggregations) {
-	            if (reduced == null) {
-	                reduced = (InternalMultipleMetric) aggregation;
-	            } else {
-	            	InternalMultipleMetric current = (InternalMultipleMetric) aggregation;
-	            	for (Map.Entry<String, Double> entry: current.paramsMap.entrySet()) {
-	            		String key = entry.getKey();
-	            		reduced.paramsMap.put(key, reduced.paramsMap.get(key) + entry.getValue());
-	            	}
-	            }
-	        }
-	        
+            for (InternalAggregation aggregation : aggregations) {
+                if (reduced == null) {
+                    reduced = (InternalMultipleMetric) aggregation;
+                } else {
+                    InternalMultipleMetric current = (InternalMultipleMetric) aggregation;
+                    for (Map.Entry<String, Double> entry: current.paramsMap.entrySet()) {
+                        String key = entry.getKey();
+                        reduced.paramsMap.put(key, reduced.paramsMap.get(key) + entry.getValue());
+                    }
+                }
+            }
+            
         }
         
         if (reduced == null)
             reduced = (InternalMultipleMetric) aggregations.get(0);
 
-    	reduced.setScriptService(reduceContext.scriptService());
+        reduced.setScriptService(reduceContext.scriptService());
         
         return reduced;
     }
@@ -99,18 +99,18 @@ public class InternalMultipleMetric extends InternalNumericMetricsAggregation.Mu
             int n = in.readInt();
             paramsMap = new HashMap<String, Double>();
             for (int i = 0; i < n; i++) {
-            	String key = in.readString();
-            	Double value = in.readDouble();
-            	paramsMap.put(key, value);
+                String key = in.readString();
+                Double value = in.readDouble();
+                paramsMap.put(key, value);
             }
         }
         if (in.readBoolean()) {
             int n = in.readInt();
             metricsMap = new HashMap<String, MultipleMetricParam>();
             for (int i = 0; i < n; i++) {
-            	String key = in.readString();
-            	MultipleMetricParam value = MultipleMetricParam.readFrom(in);
-            	metricsMap.put(key, value);
+                String key = in.readString();
+                MultipleMetricParam value = MultipleMetricParam.readFrom(in);
+                metricsMap.put(key, value);
             }
         }
     }
@@ -119,35 +119,35 @@ public class InternalMultipleMetric extends InternalNumericMetricsAggregation.Mu
     public void writeTo(StreamOutput out) throws IOException {
         out.writeString(name);
         if (paramsMap != null) {
-        	out.writeBoolean(true);
-        	out.writeInt(paramsMap.size());
-        	for (Map.Entry<String, Double> entry: paramsMap.entrySet()) {
-        		out.writeString(entry.getKey());
-        		out.writeDouble(entry.getValue());
-        	}
+            out.writeBoolean(true);
+            out.writeInt(paramsMap.size());
+            for (Map.Entry<String, Double> entry: paramsMap.entrySet()) {
+                out.writeString(entry.getKey());
+                out.writeDouble(entry.getValue());
+            }
         } else
-        	out.writeBoolean(false);
+            out.writeBoolean(false);
         
         if (metricsMap != null) {
-        	out.writeBoolean(true);
-        	out.writeInt(metricsMap.size());
-        	for (Map.Entry<String, MultipleMetricParam> entry: metricsMap.entrySet()) {
-        		out.writeString(entry.getKey());
-        		MultipleMetricParam.writeTo(entry.getValue(), out);
-        	}
+            out.writeBoolean(true);
+            out.writeInt(metricsMap.size());
+            for (Map.Entry<String, MultipleMetricParam> entry: metricsMap.entrySet()) {
+                out.writeString(entry.getKey());
+                MultipleMetricParam.writeTo(entry.getValue(), out);
+            }
         } else
-        	out.writeBoolean(false);
+            out.writeBoolean(false);
         
     }
 
-	@Override
-	public XContentBuilder doXContentBody(XContentBuilder builder, Params params) throws IOException {
+    @Override
+    public XContentBuilder doXContentBody(XContentBuilder builder, Params params) throws IOException {
         //builder.startObject(name);
         for (String metricName : metricsMap.keySet())
-        	builder.field(metricName, value(metricName));
+            builder.field(metricName, value(metricName));
         //builder.endObject();
         return builder;
-	}
+    }
 
 
     
