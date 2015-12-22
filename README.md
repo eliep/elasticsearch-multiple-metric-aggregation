@@ -4,7 +4,7 @@ This plugin add a multi-value metrics aggregation which can define and reuse sev
 
 ## Installation
 ```
-bin/plugin --url https://github.com/eliep/elasticsearch-multiple-metric-aggregation/files/69402/elasticsearch-multiple-metric-aggregation-1.4.zip install elasticsearch-multiple-metric-aggregation
+bin/plugin --url https://github.com/eliep/elasticsearch-multiple-metric-aggregation/files/69460/elasticsearch-multiple-metric-aggregation-1.4.zip install elasticsearch-multiple-metric-aggregation
 ```
 
 ## Examples
