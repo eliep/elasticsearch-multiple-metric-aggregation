@@ -3,7 +3,9 @@
 This plugin add a multi-value metrics aggregation which can define and reuse several metrics. Each metric value is build either from an aggregator (sum or count) and a numeric field in the document, or generated from a script (using the previous metric defined). Because it's a multi-value metrics aggregation; each returned value can be used to sort a parent terms aggregation.
 
 ## Installation
-sudo bin/plugin --url https://github.com/eliep/elasticsearch-multiple-metric-aggregation/files/65041/elasticsearch-multiple-metric-aggregation-1.4.zip install elasticsearch-multiple-metric-aggregation
+```
+bin/plugin --url https://github.com/eliep/elasticsearch-multiple-metric-aggregation/files/69402/elasticsearch-multiple-metric-aggregation-1.4.zip install elasticsearch-multiple-metric-aggregation
+```
 
 ## Examples
 
