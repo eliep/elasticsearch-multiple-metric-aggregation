@@ -19,7 +19,9 @@ public class MultipleMetricParserTest extends MultipleMetricAggregationTestCase 
             .startObject()
                 .startObject("metrics")
                     .startObject("value1")
-                        .field("operator", "sum")
+	                	.startObject("sum")
+	                		.field("nofield", "field")
+                		.endObject()
                     .endObject()
                 .endObject()
             .endObject()).execute().actionGet();
@@ -36,24 +38,9 @@ public class MultipleMetricParserTest extends MultipleMetricAggregationTestCase 
             .startObject()
                 .startObject("metrics")
                     .startObject("value1")
-                        .field("field", "value1")
-                    .endObject()
-                .endObject()
-            .endObject()).execute().actionGet();
-    }
-
-    @Test(expectedExceptions=SearchPhaseExecutionException.class)
-    public void assertUnknownOperator() throws Exception {
-        String indexName = "index2";
-        int numberOfShards = 1;
-        
-        createIndex(numberOfShards, indexName);
-        
-        client.prepareSearch("index1").setAggregations(JsonXContent.contentBuilder()
-            .startObject()
-                .startObject("metrics")
-                    .startObject("value1")
-                        .field("operator", "div")
+	                	.startObject("bad-aggregator")
+		            		.field("field", "a")
+		        		.endObject()
                     .endObject()
                 .endObject()
             .endObject()).execute().actionGet();

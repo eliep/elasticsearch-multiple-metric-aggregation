@@ -19,6 +19,7 @@ public class InternalMultipleMetric extends InternalNumericMetricsAggregation.Mu
 
     public Map<String, MultipleMetricParam> metricsMap;
     public Map<String, Double> paramsMap;
+    public Map<String, Long> countsMap;
     private ScriptService scriptService;
 
     InternalMultipleMetric() {} // for serialization
@@ -29,10 +30,11 @@ public class InternalMultipleMetric extends InternalNumericMetricsAggregation.Mu
         paramsMap = new HashMap<String, Double>();
     }
     
-    InternalMultipleMetric(String name, Map<String, MultipleMetricParam> metricsMap, Map<String, Double> paramsMap) {
+    InternalMultipleMetric(String name, Map<String, MultipleMetricParam> metricsMap, Map<String, Double> paramsMap, Map<String, Long> countsMap) {
         super(name);
         this.metricsMap = metricsMap;
         this.paramsMap = paramsMap;
+        this.countsMap = countsMap;
     }
     
     public void setScriptService(ScriptService scriptService) {
@@ -49,13 +51,24 @@ public class InternalMultipleMetric extends InternalNumericMetricsAggregation.Mu
     public double getValue(String name) {
         return value(name);
     }
+
+    @Override
+    public long getDocCount(String name) {
+        return (countsMap.get(name) != null) ? countsMap.get(name) : 0;
+    }
     
     @Override
     public double value(String name) {
         MultipleMetricParam metric = metricsMap.get(name);
+
+        Map<String, Object>  scriptParamsMap = metric.scriptParams();
+        if (scriptParamsMap == null)
+        	scriptParamsMap = new HashMap<String, Object>();
+        
+        scriptParamsMap.putAll(paramsMap);
         Double result = 0.0;
         result = (metric.isScript())
-            ? (Double)scriptService.executable(metric.scriptLang(), metric.script(), metric.scriptType(), paramsMap).run()
+            ? (Double)scriptService.executable(metric.scriptLang(), metric.script(), metric.scriptType(), scriptParamsMap).run()
             : paramsMap.get(name);
 
         return result;
@@ -75,10 +88,12 @@ public class InternalMultipleMetric extends InternalNumericMetricsAggregation.Mu
                     reduced = (InternalMultipleMetric) aggregation;
                 } else {
                     InternalMultipleMetric current = (InternalMultipleMetric) aggregation;
-                    for (Map.Entry<String, Double> entry: current.paramsMap.entrySet()) {
-                        String key = entry.getKey();
-                        reduced.paramsMap.put(key, reduced.paramsMap.get(key) + entry.getValue());
-                    }
+                    for (Map.Entry<String, Double> entry: current.paramsMap.entrySet()) 
+                        reduced.paramsMap.put(entry.getKey(), reduced.paramsMap.get(entry.getKey()) + entry.getValue());
+                    
+                    for (Map.Entry<String, Long> entry: current.countsMap.entrySet()) 
+                        reduced.countsMap.put(entry.getKey(), reduced.countsMap.get(entry.getKey()) + entry.getValue());
+                        
                 }
             }
             
@@ -113,6 +128,15 @@ public class InternalMultipleMetric extends InternalNumericMetricsAggregation.Mu
                 metricsMap.put(key, value);
             }
         }
+        if (in.readBoolean()) {
+            int n = in.readInt();
+            countsMap = new HashMap<String, Long>();
+            for (int i = 0; i < n; i++) {
+                String key = in.readString();
+                Long value = in.readLong();
+                countsMap.put(key, value);
+            }
+        }
     }
 
     @Override
@@ -138,6 +162,16 @@ public class InternalMultipleMetric extends InternalNumericMetricsAggregation.Mu
         } else
             out.writeBoolean(false);
         
+        if (countsMap != null) {
+            out.writeBoolean(true);
+            out.writeInt(countsMap.size());
+            for (Map.Entry<String, Long> entry: countsMap.entrySet()) {
+                out.writeString(entry.getKey());
+                out.writeLong(entry.getValue());
+            }
+        } else
+            out.writeBoolean(false);
+        
     }
 
     @Override
@@ -145,7 +179,14 @@ public class InternalMultipleMetric extends InternalNumericMetricsAggregation.Mu
         //builder.startObject(name);
         for (String metricName : metricsMap.keySet())
             builder.field(metricName, value(metricName));
-        //builder.endObject();
+        
+        if (countsMap != null && countsMap.size() > 0) {
+	        builder.startObject("doc_count");
+	        for (String metricName : metricsMap.keySet())
+	            builder.field(metricName, countsMap.get(metricName));
+	        builder.endObject();
+        }
+        
         return builder;
     }
 

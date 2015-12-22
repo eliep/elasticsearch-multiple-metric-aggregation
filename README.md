@@ -25,13 +25,29 @@ You can compute the ratio sum(x) / sum(y) with the following aggregation:
     "ranking" : { 
       "multiple-metric" : { 
         "ratio" : { "script": "sum_x / sum_y" },
-        "sum_x" : { "field": "x", "operator": "sum" }
-        "sum_y" : { "field": "y", "operator": "sum" }
+        "sum_x" : { "sum" : { "field": "x" } }
+        "sum_y" : { "sum" : { "field": "y" } }
 	  } 
     }
   }
 }
 ``` 
+
+You can also use it to compute a weighted average: 
+```
+{
+  "aggs" : {
+    "ranking" : { 
+      "multiple-metric" : { 
+        "ratio" : { "script": "sum_x / sum_y" },
+        "sum_x" : { "sum" : { "script": "x * y" } }
+        "sum_y" : { "sum" : { "field": "y" } }
+      } 
+    }
+  }
+}
+```
+
 
 ### Ordering a terms aggregation
 Because it's a multi-value metrics aggregation, it can be used to order a terms aggregation:
@@ -47,8 +63,8 @@ Because it's a multi-value metrics aggregation, it can be used to order a terms 
         "ranking" : { 
           "multiple-metric" : { 
             "ratio" : { "script": "sum_x / sum_y" },
-            "sum_x" : { "field": "x", "operator": "sum" }
-            "sum_y" : { "field": "y", "operator": "sum" }
+            "sum_x" : { "sum" : { "field": "x" } }
+            "sum_y" : { "sum" : { "field": "y" } }
           } 
 	    }
       }
@@ -66,23 +82,34 @@ It's also possible to add a filter on a metric value computed from a document fi
     "ranking" : { 
       "multiple-metric" : { 
         "ratio" : { "script": "sum_x / sum_y" },
-        "sum_x" : { "field": "x", "operator": "sum", "filter": { "term" : { "tag" : "a" } } }
-        "sum_y" : { "field": "y", "operator": "sum" }
+        "sum_x" : { "sum" : { "field": "x" }, "filter": { "term" : { "tag" : "a" } } },
+        "sum_y" : { "sum" : { "field": "y" } }
 	  } 
     }
   }
 }
 ```
-## Limitation
 
- * count operator can only be applied to numeric fields
- * script metric can only be defined inline
- * field metric parameter cannot be defined as a script (not possible to compute the sum(x * y) for example)
+
+### Script parameters
+Script parameters are also allowed:
+
+```
+{
+  "aggs" : {
+    "ranking" : { 
+      "multiple-metric" : { 
+        "ratio" : { "script": "sum_x * factor / sum_y", "params" : { "factor": 2 } },
+        "sum_x" : { "sum" : { "field": "x" }, "filter": { "term" : { "tag" : "a" } } },
+        "sum_y" : { "sum" : { "field": "y" } }
+      } 
+    }
+  }
+}
+```
 
 ## Todo
 
- * Script parameter can only be inline (should use the [script format](https://www.elastic.co/guide/en/elasticsearch/reference/1.4/modules-scripting.html))
- * Allow script parameters
- * Field formating
+ * Script metric can only be defined inline
  * Add min/max operator
- * Add '*' as a special field for count operator
+ * Only tested with v1.4.5

@@ -10,6 +10,8 @@ import org.apache.lucene.util.Bits;
 import org.elasticsearch.common.lease.Releasables;
 import org.elasticsearch.common.lucene.docset.DocIdSets;
 import org.elasticsearch.common.util.DoubleArray;
+import org.elasticsearch.common.util.LongArray;
+import org.elasticsearch.index.fielddata.SortedBinaryDocValues;
 import org.elasticsearch.index.fielddata.SortedNumericDoubleValues;
 import org.elasticsearch.script.ScriptService;
 import org.elasticsearch.search.aggregations.AggregationExecutionException;
@@ -27,32 +29,35 @@ import fr.v3d.elasticsearch.search.aggregations.support.MultipleValuesSourceAggr
  */
 public class MultipleMetricAggregator extends NumericMetricsAggregator.MultiValue {
     
-    private final Map<String, ValuesSource.Numeric> valuesSourceMap;
-    private Map<String, SortedNumericDoubleValues> valuesMap = new HashMap<String, SortedNumericDoubleValues>();
+    private final Map<String, ValuesSource> valuesSourceMap;
+    private Map<String, SortedNumericDoubleValues> doubleValuesMap = new HashMap<String, SortedNumericDoubleValues>();
+    private Map<String, SortedBinaryDocValues> docValuesMap = new HashMap<String, SortedBinaryDocValues>();
 
-    private Map<String, MultipleMetricParam> metricsMap;
+    private Map<String, MultipleMetricParam> metricParamsMap;
     private Map<String, DoubleArray> metricValuesMap = new HashMap<String, DoubleArray>();
+    private Map<String, LongArray> metricCountsMap = new HashMap<String, LongArray>();
     
     private ScriptService scriptService;
 
     private Map<String, Bits> bitsMap = new HashMap<String, Bits>();
     
-    public MultipleMetricAggregator(String name, long estimatedBucketsCount, Map<String, ValuesSource.Numeric> valuesSourceMap, 
+    public MultipleMetricAggregator(String name, long estimatedBucketsCount, Map<String, ValuesSource> valuesSourceMap, 
             AggregationContext aggregationContext, Aggregator parent,
             Map<String, MultipleMetricParam> metricsMap) {
         
         super(name, estimatedBucketsCount, aggregationContext, parent);
         this.valuesSourceMap = valuesSourceMap;
-        this.metricsMap = metricsMap;
+        this.metricParamsMap = metricsMap;
         
         this.scriptService = context.searchContext().scriptService();
         
-        for (Map.Entry<String, ValuesSource.Numeric> entry: valuesSourceMap.entrySet()) {
-            ValuesSource.Numeric valuesSource = entry.getValue();
+        for (Map.Entry<String, ValuesSource> entry: valuesSourceMap.entrySet()) {
+            ValuesSource valuesSource = entry.getValue();
             String key = entry.getKey();
             if (valuesSource != null) {
                 final long initialSize = estimatedBucketsCount < 2 ? 1 : estimatedBucketsCount;
                 metricValuesMap.put(key, bigArrays.newDoubleArray(initialSize, true));
+                metricCountsMap.put(key, bigArrays.newLongArray(initialSize, true));
             }
         }
     }
@@ -64,14 +69,23 @@ public class MultipleMetricAggregator extends NumericMetricsAggregator.MultiValu
 
     @Override
     public void setNextReader(AtomicReaderContext reader) {
-        for (Entry<String, ValuesSource.Numeric> entry: valuesSourceMap.entrySet()) {
+        for (Entry<String, ValuesSource> entry: valuesSourceMap.entrySet()) {
+        	String key = entry.getKey();
             try {
                 Bits bits = DocIdSets.toSafeBits(
                         reader.reader(), 
-                        metricsMap.get(entry.getKey()).filter().getDocIdSet(reader, reader.reader().getLiveDocs()));
+                        metricParamsMap.get(key).filter().getDocIdSet(reader, reader.reader().getLiveDocs()));
                 
-                bitsMap.put(entry.getKey(), bits);
-                valuesMap.put(entry.getKey(), entry.getValue() != null ? entry.getValue().doubleValues() : null);
+                bitsMap.put(key, bits);
+                if (metricParamsMap.get(key).operator().equals(MultipleMetricParser.COUNT_OPERATOR)) {
+                	SortedBinaryDocValues values = ( entry.getValue() != null) ? entry.getValue().bytesValues() : null;
+                	docValuesMap.put(key, values);
+                } else {
+                	SortedNumericDoubleValues values = ( entry.getValue() != null) 
+                			? ((ValuesSource.Numeric)entry.getValue()).doubleValues()
+        					: null;
+                	doubleValuesMap.put(key, values);
+                }
             } catch (IOException ioe) {
                 throw new AggregationExecutionException("Failed to aggregate filter aggregator [" + name + "]", ioe);
             }
@@ -82,24 +96,32 @@ public class MultipleMetricAggregator extends NumericMetricsAggregator.MultiValu
     public void collect(int doc, long owningBucketOrdinal) throws IOException {
         assert this.valuesSourceMap != null : "should collect first";
 
-        for (Entry<String, SortedNumericDoubleValues> entry: valuesMap.entrySet() ) {
+        for (Entry<String, SortedNumericDoubleValues> entry: doubleValuesMap.entrySet() ) {
             String key = entry.getKey();
             SortedNumericDoubleValues values = entry.getValue();
             if (values != null && bitsMap.get(key).get(doc)) {
                 values.setDocument(doc);
-                final int valueCount = values.count();
-
                 metricValuesMap.put(key, bigArrays.grow(metricValuesMap.get(key), owningBucketOrdinal + 1));
                 double increment = 0;
-                if (metricsMap.get(key).operator().equals(MultipleMetricParser.COUNT_OPERATOR)) {
-                    increment = valueCount;
-                    
-                } else if (metricsMap.get(key).operator().equals(MultipleMetricParser.SUM_OPERATOR)) {
-                    for (int i = 0; i < valueCount; i++) 
-                        increment += values.valueAt(i);
-                    
-                }
+                for (int i = 0; i < values.count(); i++) 
+                    increment += values.valueAt(i);
                 metricValuesMap.get(key).increment(owningBucketOrdinal, increment);
+                
+                metricCountsMap.put(key, bigArrays.grow(metricCountsMap.get(key), owningBucketOrdinal + 1));
+                metricCountsMap.get(key).increment(owningBucketOrdinal, 1);
+            } 
+        }
+        
+        for (Entry<String, SortedBinaryDocValues> entry: docValuesMap.entrySet() ) {
+            String key = entry.getKey();
+            SortedBinaryDocValues values = entry.getValue();
+            if (values != null && bitsMap.get(key).get(doc)) {
+                values.setDocument(doc);
+                metricValuesMap.put(key, bigArrays.grow(metricValuesMap.get(key), owningBucketOrdinal + 1));
+                metricValuesMap.get(key).increment(owningBucketOrdinal, values.count());
+
+                metricCountsMap.put(key, bigArrays.grow(metricCountsMap.get(key), owningBucketOrdinal + 1));
+                metricCountsMap.get(key).increment(owningBucketOrdinal, 1);
             } 
         }
     }
@@ -111,26 +133,38 @@ public class MultipleMetricAggregator extends NumericMetricsAggregator.MultiValu
     }
 
     private HashMap<String, Double> getScriptParamsMap(long owningBucketOrdinal) {
-        HashMap<String, Double> paramsMap = new HashMap<String, Double>();
-        for (Map.Entry<String, MultipleMetricParam> entry: metricsMap.entrySet())
+        HashMap<String, Double> scriptParamsMap = new HashMap<String, Double>();
+        for (Map.Entry<String, MultipleMetricParam> entry: metricParamsMap.entrySet())
             if (!entry.getValue().isScript())
-                paramsMap.put(entry.getKey(), getMetricValue(entry.getKey(), owningBucketOrdinal));
+            	scriptParamsMap.put(entry.getKey(), getMetricValue(entry.getKey(), owningBucketOrdinal));
         
-        return paramsMap;
+        
+        return scriptParamsMap;
+    }
+
+    private Map<String, Long> getCountsMap(long owningBucketOrdinal) {
+        HashMap<String, Long> countsMap = new HashMap<String, Long>();
+        for (Map.Entry<String, LongArray> entry: metricCountsMap.entrySet())
+        	countsMap.put(entry.getKey(), entry.getValue().get(owningBucketOrdinal));
+        
+        return countsMap;
     }
     
     @Override
     public boolean hasMetric(String name) {
-        return metricsMap.containsKey(name);
+        return metricParamsMap.containsKey(name);
     }
     
     @Override
     public double metric(String name, long owningBucketOrdinal) {
         Double result;
-        MultipleMetricParam metric = metricsMap.get(name);
+        MultipleMetricParam metric = metricParamsMap.get(name);
         if (metric.isScript()) {
-            HashMap<String, Double> paramsMap = getScriptParamsMap(owningBucketOrdinal);
-            result = (Double)scriptService.executable(metric.scriptLang(), metric.script(), metric.scriptType(), paramsMap).run();
+            Map<String, Object> scriptParamsMap = metric.scriptParams();
+            if (scriptParamsMap == null)
+            	scriptParamsMap = new HashMap<String, Object>();
+            scriptParamsMap.putAll(getScriptParamsMap(owningBucketOrdinal));
+            result = (Double)scriptService.executable(metric.scriptLang(), metric.script(), metric.scriptType(), scriptParamsMap).run();
         } else {
             result = getMetricValue(name, owningBucketOrdinal);
         }
@@ -140,9 +174,10 @@ public class MultipleMetricAggregator extends NumericMetricsAggregator.MultiValu
 
     @Override
     public InternalAggregation buildAggregation(long owningBucketOrdinal) {
-        HashMap<String, Double> paramsMap = getScriptParamsMap(owningBucketOrdinal);
+        HashMap<String, Double> scriptParamsMap = getScriptParamsMap(owningBucketOrdinal);
+        Map<String, Long> countsMap = getCountsMap(owningBucketOrdinal);
         
-        return new InternalMultipleMetric(name, metricsMap, paramsMap);
+        return new InternalMultipleMetric(name, metricParamsMap, scriptParamsMap, countsMap);
     }
 
     @Override
@@ -150,17 +185,17 @@ public class MultipleMetricAggregator extends NumericMetricsAggregator.MultiValu
         return new InternalMultipleMetric(name);
     }
     
-    public static class Factory extends MultipleValuesSourceAggregatorFactory.LeafOnly<ValuesSource.Numeric> {
+    public static class Factory extends MultipleValuesSourceAggregatorFactory.LeafOnly<ValuesSource> {
         public Map<String, MultipleMetricParam> metricsMap;
         
-        public Factory(String name, Map<String, ValuesSourceConfig<ValuesSource.Numeric>> valueSourceConfigMap, 
+        public Factory(String name, Map<String, ValuesSourceConfig<ValuesSource>> valueSourceConfigMap, 
                 Map<String, MultipleMetricParam> metricsMap) {
             super(name, InternalMultipleMetric.TYPE.name(), valueSourceConfigMap);
             this.metricsMap = metricsMap;
         }
 
         @Override
-        public Aggregator create(Map<String, ValuesSource.Numeric> valuesSourceMap, 
+        public Aggregator create(Map<String, ValuesSource> valuesSourceMap, 
                 long expectedBucketsCount, AggregationContext aggregationContext, Aggregator parent) {
             
             return new MultipleMetricAggregator(name, expectedBucketsCount, valuesSourceMap, aggregationContext, parent, this.metricsMap);
@@ -171,9 +206,13 @@ public class MultipleMetricAggregator extends NumericMetricsAggregator.MultiValu
     public void doClose() {
         for (Map.Entry<String, DoubleArray> entry: metricValuesMap.entrySet())
             Releasables.close(entry.getValue());
+        for (Map.Entry<String, LongArray> entry: metricCountsMap.entrySet())
+            Releasables.close(entry.getValue());
         
         metricValuesMap = null;
-        metricsMap = null;
+        metricParamsMap = null;
         bitsMap = null;
+        doubleValuesMap = null;
+        docValuesMap = null;
     }
 }

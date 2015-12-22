@@ -12,6 +12,7 @@ import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.logging.ESLoggerFactory;
 import org.elasticsearch.common.network.NetworkUtils;
 import org.elasticsearch.common.settings.ImmutableSettings;
+import org.elasticsearch.indices.IndexMissingException;
 import org.elasticsearch.node.Node;
 import org.testng.Assert;
 import org.testng.AssertJUnit;
@@ -51,18 +52,6 @@ public class MultipleMetricAggregationTestCase extends Assert {
         node.close();
         node2.close();
     }
-
-    @Test
-    public void assertPluginLoaded() {
-        NodesInfoResponse nodesInfoResponse = client.admin().cluster().prepareNodesInfo()
-                .clear().setPlugins(true).get();
-        logger.info("{}", nodesInfoResponse);
-        AssertJUnit.assertEquals(2, nodesInfoResponse.getNodes().length);
-        AssertJUnit.assertNotNull(nodesInfoResponse.getNodes()[0].getPlugins().getInfos());
-        AssertJUnit.assertEquals(1, nodesInfoResponse.getNodes()[0].getPlugins().getInfos().size());
-        AssertJUnit.assertEquals("multiple-metric-aggregation", nodesInfoResponse.getNodes()[0].getPlugins().getInfos().get(0).getName());
-        AssertJUnit.assertEquals(false, nodesInfoResponse.getNodes()[0].getPlugins().getInfos().get(0).isSite());
-    }
     
 
     public void createIndex(int numberOfShards, String indexName) {
@@ -71,8 +60,17 @@ public class MultipleMetricAggregationTestCase extends Assert {
         .setSettings(ImmutableSettings.settingsBuilder().put("index.number_of_shards", numberOfShards))
         .execute().actionGet();
     }
+
+    public void deleteIndex(String indexName) {
+    	try {
+	        client.admin().indices()
+	        .prepareDelete(indexName)
+	        .execute().actionGet();
+    	} catch (IndexMissingException ime) { /* ignoring */ }
+    }
     
     public void buildTestDataset(int numberOfShards, String indexName, String typeName, int size, Map<String, Integer> termsFactor) {
+    	deleteIndex(indexName);
         createIndex(numberOfShards, indexName);
         
         
