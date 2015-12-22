@@ -24,7 +24,6 @@ import org.elasticsearch.search.aggregations.support.ValuesSourceParser;
 import org.elasticsearch.search.internal.SearchContext;
 
 public class MultipleMetricParam {
-    protected final static ESLogger logger = ESLoggerFactory.getLogger("test");
 
     public static final String SUM_TOKEN = "sum";
     public static final String COUNT_TOKEN = "count";
@@ -108,7 +107,6 @@ public class MultipleMetricParam {
 
             if (token == XContentParser.Token.FIELD_NAME) {
                 currentFieldName = parser.currentName();
-                logger.debug("Metric param current field name", currentFieldName);
             } else if (token == XContentParser.Token.VALUE_STRING) {
                 if (SCRIPT_TOKEN.equals(currentFieldName)) {
                     if (!scriptParameterParser.token(currentFieldName, token, parser)) {

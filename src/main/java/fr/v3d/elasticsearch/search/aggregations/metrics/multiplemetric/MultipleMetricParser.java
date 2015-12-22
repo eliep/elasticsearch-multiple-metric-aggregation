@@ -18,7 +18,6 @@ import org.elasticsearch.search.internal.SearchContext;
  *
  */
 public class MultipleMetricParser implements Aggregator.Parser {
-    protected final static ESLogger logger = ESLoggerFactory.getLogger("test");
 
     public static final String PARAMS_TOKEN = "params";
     
@@ -46,13 +45,10 @@ public class MultipleMetricParser implements Aggregator.Parser {
             if (token == XContentParser.Token.FIELD_NAME) {
                 currentFieldName = parser.currentName();
             } else if (token == XContentParser.Token.START_OBJECT) {
-            	logger.info("ready to parse: ", currentFieldName);
                 MultipleMetricParam metric = MultipleMetricParam.parse(aggregationName, parser, context, currentFieldName);
                 metricsMap.put(currentFieldName, metric);
-            	logger.info("saved metric: ", currentFieldName);
             	if (!metric.isScript())
             		configMap.put(currentFieldName, metric.vsParser().config());
-                logger.info("saved metric config: ", currentFieldName);
             } else {
                 throw new SearchParseException(context, "Unexpected token " + token + " in [" + aggregationName + "]");
             }

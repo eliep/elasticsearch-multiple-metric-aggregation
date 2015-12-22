@@ -182,7 +182,8 @@ public class MultipleMetricAggregator extends NumericMetricsAggregator.MultiValu
 
     @Override
     public InternalAggregation buildEmptyAggregation() {
-        return new InternalMultipleMetric(name);
+    	
+        return new InternalMultipleMetric(name, metricParamsMap);
     }
     
     public static class Factory extends MultipleValuesSourceAggregatorFactory.LeafOnly<ValuesSource> {

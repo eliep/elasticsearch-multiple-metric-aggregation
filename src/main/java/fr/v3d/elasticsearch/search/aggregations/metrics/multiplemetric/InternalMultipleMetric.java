@@ -7,6 +7,8 @@ import java.util.Map;
 
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
+import org.elasticsearch.common.logging.ESLogger;
+import org.elasticsearch.common.logging.ESLoggerFactory;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.script.ScriptService;
 import org.elasticsearch.search.aggregations.AggregationStreams;
@@ -14,7 +16,8 @@ import org.elasticsearch.search.aggregations.InternalAggregation;
 import org.elasticsearch.search.aggregations.metrics.InternalNumericMetricsAggregation;
 
 public class InternalMultipleMetric extends InternalNumericMetricsAggregation.MultiValue implements MultipleMetric {
-    
+
+    protected final static ESLogger logger = ESLoggerFactory.getLogger("test");
     public final static Type TYPE = new Type("multiple-metric");
 
     public Map<String, MultipleMetricParam> metricsMap;
@@ -24,10 +27,11 @@ public class InternalMultipleMetric extends InternalNumericMetricsAggregation.Mu
 
     InternalMultipleMetric() {} // for serialization
 
-    InternalMultipleMetric(String name) {
+    InternalMultipleMetric(String name, Map<String, MultipleMetricParam> metricsMap) {
         super(name);
-        metricsMap = new HashMap<String, MultipleMetricParam>();
-        paramsMap = new HashMap<String, Double>();
+        this.metricsMap = metricsMap;
+        this.paramsMap = new HashMap<String, Double>();
+        this.countsMap = new HashMap<String, Long>();
     }
     
     InternalMultipleMetric(String name, Map<String, MultipleMetricParam> metricsMap, Map<String, Double> paramsMap, Map<String, Long> countsMap) {
@@ -41,7 +45,6 @@ public class InternalMultipleMetric extends InternalNumericMetricsAggregation.Mu
         this.scriptService = scriptService;
     }
     
-
     @Override
     public Type type() {
         return TYPE;
@@ -60,8 +63,10 @@ public class InternalMultipleMetric extends InternalNumericMetricsAggregation.Mu
     @Override
     public double value(String name) {
         MultipleMetricParam metric = metricsMap.get(name);
-
-        Map<String, Object>  scriptParamsMap = metric.scriptParams();
+        if (paramsMap.size() == 0)
+        	return 0.0;
+        
+        Map<String, Object> scriptParamsMap = metric.scriptParams();
         if (scriptParamsMap == null)
         	scriptParamsMap = new HashMap<String, Object>();
         
