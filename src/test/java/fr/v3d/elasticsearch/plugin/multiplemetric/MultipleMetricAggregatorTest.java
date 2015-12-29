@@ -16,7 +16,11 @@ import java.util.Map;
 
 import org.elasticsearch.action.admin.cluster.node.info.NodesInfoResponse;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.index.query.FilterBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeFilterBuilder;
+import org.elasticsearch.index.query.TermFilterBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms.Order;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsBuilder;
@@ -243,6 +247,54 @@ public class MultipleMetricAggregatorTest  extends MultipleMetricAggregationTest
             
             assertEquals(metrics.getDocCount("value1"), 10);
             assertEquals(metrics.getDocCount("value2"), 10);
+        }
+    }
+    
+    @Test
+    public void assertMultipleMetricAsEmptyTermsSubAggregationOneShard() {
+        String indexName = "test4";
+        int size = 1;
+        int numberOfShards = 1;
+
+        Map<String, Integer> termsFactor = new HashMap<String, Integer>();
+        termsFactor.put("foo", 1);
+        termsFactor.put("bar", 10);
+        termsFactor.put("baz", 100);
+        
+        buildTestDataset(numberOfShards, indexName, "type1", size, termsFactor);
+        
+        TermsBuilder termsBuilder = new TermsBuilder("group_by")
+                .field("field0")
+                .size(termsFactor.size())
+                .minDocCount(0L) // we force empty bucket to be returned
+                .order(Order.aggregation("metrics.ratio", true))
+                .subAggregation(new MultipleMetricBuilder("metrics")
+                		.script(new ScriptBuilder("ratio").script("value1 / value2"))
+                		.field(new SumBuilder("value1").field("value1"))
+                		.field(new CountBuilder("value2").field("value2")));
+
+        SearchResponse searchResponse = client.prepareSearch(indexName)
+                .setQuery(QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), new TermFilterBuilder("field0", "buz")))
+                .addAggregation(termsBuilder)
+                .execute().actionGet();
+        
+        Terms terms = searchResponse.getAggregations().get("group_by");
+        assertNotNull(terms);
+        assertEquals(terms.getBuckets().size(), termsFactor.size());
+        
+        for (Map.Entry<String, Integer> entry: termsFactor.entrySet()) {
+            String term = entry.getKey();
+            assertNotNull(terms.getBucketByKey(term));
+            assertNotNull(terms.getBucketByKey(term).getAggregations());
+            assertNotNull(terms.getBucketByKey(term).getAggregations().get("metrics"));
+
+            MultipleMetric metrics = terms.getBucketByKey(term).getAggregations().get("metrics");
+            assertEquals(metrics.getValue("value1"), 0.0);
+            assertEquals(metrics.getValue("value2"), 0.0);
+            assertEquals(metrics.getValue("ratio"), 0.0);
+            
+            assertEquals(metrics.getDocCount("value1"), 0);
+            assertEquals(metrics.getDocCount("value2"), 0);
         }
     }
     

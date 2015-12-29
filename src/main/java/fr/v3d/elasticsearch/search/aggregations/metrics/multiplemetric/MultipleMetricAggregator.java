@@ -149,6 +149,14 @@ public class MultipleMetricAggregator extends NumericMetricsAggregator.MultiValu
         
         return countsMap;
     }
+
+    private Map<String, Long> getEmptyCountsMap() {
+        HashMap<String, Long> countsMap = new HashMap<String, Long>();
+        for (Map.Entry<String, LongArray> entry: metricCountsMap.entrySet())
+        	countsMap.put(entry.getKey(), 0L);
+        
+        return countsMap;
+    }
     
     @Override
     public boolean hasMetric(String name) {
@@ -182,8 +190,7 @@ public class MultipleMetricAggregator extends NumericMetricsAggregator.MultiValu
 
     @Override
     public InternalAggregation buildEmptyAggregation() {
-    	
-        return new InternalMultipleMetric(name, metricParamsMap);
+        return new InternalMultipleMetric(name, metricParamsMap, getEmptyCountsMap());
     }
     
     public static class Factory extends MultipleValuesSourceAggregatorFactory.LeafOnly<ValuesSource> {

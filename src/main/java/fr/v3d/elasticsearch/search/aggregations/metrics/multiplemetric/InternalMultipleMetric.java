@@ -27,11 +27,11 @@ public class InternalMultipleMetric extends InternalNumericMetricsAggregation.Mu
 
     InternalMultipleMetric() {} // for serialization
 
-    InternalMultipleMetric(String name, Map<String, MultipleMetricParam> metricsMap) {
+    InternalMultipleMetric(String name, Map<String, MultipleMetricParam> metricsMap, Map<String, Long> countsMap) {
         super(name);
         this.metricsMap = metricsMap;
+        this.countsMap = countsMap;
         this.paramsMap = new HashMap<String, Double>();
-        this.countsMap = new HashMap<String, Long>();
     }
     
     InternalMultipleMetric(String name, Map<String, MultipleMetricParam> metricsMap, Map<String, Double> paramsMap, Map<String, Long> countsMap) {
