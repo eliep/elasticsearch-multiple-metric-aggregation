@@ -4,17 +4,21 @@
 
 
     <name>Elasticsearch Multiple Metric Aggregation Plugin</name>
+    <description>Add a multi-value metrics aggregation which can define and reuse several metrics</description>
     
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>fr.v3d.elasticsearch.plugin</groupId>
     <artifactId>elasticsearch-multiple-metric-aggregation</artifactId>
-    <version>1.4</version>
+    <version>1.4.5</version>
 
     <packaging>jar</packaging>
 
     <properties>
-        <elasticsearch.version>1.4.5</elasticsearch.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <elasticsearch.version>1.7.3</elasticsearch.version>
+        <elasticsearch.plugin.jvm>true</elasticsearch.plugin.jvm>
+        <elasticsearch.plugin.classname>fr.v3d.elasticsearch.plugin.multiplemetric.MultipleMetricPlugin</elasticsearch.plugin.classname>
     </properties>
 
     <dependencies>
@@ -43,6 +47,23 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>es-plugin.properties</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>./</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>plugin-descriptor.properties</include>
+                </includes>
+            </resource>
+        </resources>
+        
         <plugins>
             <plugin>
                 <artifactId>maven-clean-plugin</artifactId>
