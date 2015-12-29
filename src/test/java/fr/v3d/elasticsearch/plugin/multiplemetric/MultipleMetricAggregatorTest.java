@@ -4,10 +4,8 @@ import org.testng.AssertJUnit;
 import org.testng.annotations.Test;
 
 import fr.v3d.elasticsearch.search.aggregations.metrics.multiplemetric.CountBuilder;
-import fr.v3d.elasticsearch.search.aggregations.metrics.multiplemetric.FieldBuilder;
 import fr.v3d.elasticsearch.search.aggregations.metrics.multiplemetric.MultipleMetric;
 import fr.v3d.elasticsearch.search.aggregations.metrics.multiplemetric.MultipleMetricBuilder;
-import fr.v3d.elasticsearch.search.aggregations.metrics.multiplemetric.MultipleMetricParser;
 import fr.v3d.elasticsearch.search.aggregations.metrics.multiplemetric.ScriptBuilder;
 import fr.v3d.elasticsearch.search.aggregations.metrics.multiplemetric.SumBuilder;
 
@@ -63,7 +61,6 @@ public class MultipleMetricAggregatorTest  extends MultipleMetricAggregationTest
         
         assertEquals(metrics.getDocCount("value1"), 10);
         assertEquals(metrics.getDocCount("value2"), 10);
-        assertEquals(metrics.getDocCount("ratio"), 0);
     }
 
     @Test
@@ -91,7 +88,6 @@ public class MultipleMetricAggregatorTest  extends MultipleMetricAggregationTest
         
         assertEquals(metrics.getDocCount("value1"), 10);
         assertEquals(metrics.getDocCount("value2"), 10);
-        assertEquals(metrics.getDocCount("ratio"), 0);
     }
     
 
@@ -121,7 +117,6 @@ public class MultipleMetricAggregatorTest  extends MultipleMetricAggregationTest
         
         assertEquals(metrics.getDocCount("value1"), 10);
         assertEquals(metrics.getDocCount("value2"), 10);
-        assertEquals(metrics.getDocCount("ratio"), 0);
     }
     
     @Test
@@ -149,7 +144,6 @@ public class MultipleMetricAggregatorTest  extends MultipleMetricAggregationTest
         
         assertEquals(metrics.getDocCount("value1"), 4);
         assertEquals(metrics.getDocCount("value2"), 10);
-        assertEquals(metrics.getDocCount("ratio"), 0);
     }
     
     @Test
@@ -177,7 +171,6 @@ public class MultipleMetricAggregatorTest  extends MultipleMetricAggregationTest
         
         assertEquals(metrics.getDocCount("value1"), 0);
         assertEquals(metrics.getDocCount("value2"), 0);
-        assertEquals(metrics.getDocCount("ratio"), 0);
     }
     
     @Test
@@ -223,7 +216,6 @@ public class MultipleMetricAggregatorTest  extends MultipleMetricAggregationTest
             
             assertEquals(metrics.getDocCount("value1"), 10);
             assertEquals(metrics.getDocCount("value2"), 10);
-            assertEquals(metrics.getDocCount("ratio"), 0);
         }
     }
     
@@ -270,7 +262,6 @@ public class MultipleMetricAggregatorTest  extends MultipleMetricAggregationTest
             
             assertEquals(metrics.getDocCount("value1"), 10);
             assertEquals(metrics.getDocCount("value2"), 10);
-            assertEquals(metrics.getDocCount("ratio"), 0);
         }
     }
     

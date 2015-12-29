@@ -65,16 +65,19 @@ public class InternalMultipleMetric extends InternalNumericMetricsAggregation.Mu
         MultipleMetricParam metric = metricsMap.get(name);
         if (paramsMap.size() == 0)
         	return 0.0;
-        
-        Map<String, Object> scriptParamsMap = metric.scriptParams();
-        if (scriptParamsMap == null)
-        	scriptParamsMap = new HashMap<String, Object>();
-        
-        scriptParamsMap.putAll(paramsMap);
+
         Double result = 0.0;
-        result = (metric.isScript())
-            ? (Double)scriptService.executable(metric.scriptLang(), metric.script(), metric.scriptType(), scriptParamsMap).run()
-            : paramsMap.get(name);
+        if (!metric.isScript()) {
+        	result = (paramsMap.get(name) != null) ? paramsMap.get(name) : 0.0;
+        	
+        } else {
+	        Map<String, Object> scriptParamsMap = metric.scriptParams();
+	        if (scriptParamsMap == null)
+	        	scriptParamsMap = new HashMap<String, Object>();
+	        
+	        scriptParamsMap.putAll(paramsMap);
+	        result = (Double)scriptService.executable(metric.scriptLang(), metric.script(), metric.scriptType(), scriptParamsMap).run();
+        }
 
         return result;
     }
@@ -187,8 +190,9 @@ public class InternalMultipleMetric extends InternalNumericMetricsAggregation.Mu
         
         if (countsMap != null && countsMap.size() > 0) {
 	        builder.startObject("doc_count");
-	        for (String metricName : metricsMap.keySet())
-	            builder.field(metricName, countsMap.get(metricName));
+	        for (Map.Entry<String, MultipleMetricParam> entry : metricsMap.entrySet())
+	        	if (!entry.getValue().isScript())
+	        		builder.field(entry.getKey(), getDocCount(entry.getKey()));
 	        builder.endObject();
         }
         
