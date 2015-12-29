@@ -1,6 +1,8 @@
 package fr.v3d.elasticsearch.search.aggregations.support;
 
+import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -8,6 +10,7 @@ import org.elasticsearch.search.aggregations.AggregationInitializationException;
 import org.elasticsearch.search.aggregations.Aggregator;
 import org.elasticsearch.search.aggregations.AggregatorFactories;
 import org.elasticsearch.search.aggregations.AggregatorFactory;
+import org.elasticsearch.search.aggregations.pipeline.PipelineAggregator;
 import org.elasticsearch.search.aggregations.support.AggregationContext;
 import org.elasticsearch.search.aggregations.support.ValuesSource;
 import org.elasticsearch.search.aggregations.support.ValuesSourceConfig;
@@ -34,15 +37,33 @@ public abstract class MultipleValuesSourceAggregatorFactory<VS extends ValuesSou
     }
 
     @Override
-    public Aggregator create(AggregationContext context, Aggregator parent, long expectedBucketsCount) {
+    public Aggregator createInternal(AggregationContext context, Aggregator parent, boolean collectsFromSingleBucket,
+            List<PipelineAggregator> pipelineAggregators, Map<String, Object> metaData) throws IOException {
         Map<String, VS> vsMap = new HashMap<String, VS>();
         for (Entry<String, ValuesSourceConfig<VS>> entry: this.configMap.entrySet()) {
             ValuesSourceConfig<VS> config = entry.getValue();
-            VS vs = !config.unmapped() ? context.valuesSource(config, parent == null ? 0 : 1 + parent.depth()) : null;
+            VS vs = !config.unmapped() ? context.valuesSource(config, context.searchContext()) : null;
+            //VS vs = !config.unmapped() ? context.valuesSource(config, parent == null ? 0 : 1 + parent.depth()) : null;
             vsMap.put(entry.getKey(), vs);
         }
-        return create(vsMap, expectedBucketsCount, context, parent);
+        return doCreateInternal(vsMap, context, parent, collectsFromSingleBucket, pipelineAggregators, metaData);
     }
+//    
+//    public Aggregator create(AggregationContext context, Aggregator parent, long expectedBucketsCount) {
+//        Map<String, VS> vsMap = new HashMap<String, VS>();
+//        for (Entry<String, ValuesSourceConfig<VS>> entry: this.configMap.entrySet()) {
+//            ValuesSourceConfig<VS> config = entry.getValue();
+//            VS vs = !config.unmapped() ? context.valuesSource(config, parent == null ? 0 : 1 + parent.depth()) : null;
+//            vsMap.put(entry.getKey(), vs);
+//        }
+//        return create(vsMap, expectedBucketsCount, context, parent);
+//    }
+//    
+
+//    protected abstract Aggregator create(Map<String, VS> valuesSourceMap, long expectedBucketsCount, AggregationContext aggregationContext, Aggregator parent);
+    protected abstract Aggregator doCreateInternal(Map<String, VS> valuesSourceMap, AggregationContext aggregationContext, Aggregator parent,
+            boolean collectsFromSingleBucket, List<PipelineAggregator> pipelineAggregators, Map<String, Object> metaData)
+            throws IOException;
 
     @Override
     public void doValidate() {
@@ -52,7 +73,6 @@ public abstract class MultipleValuesSourceAggregatorFactory<VS extends ValuesSou
     }
 
 
-    protected abstract Aggregator create(Map<String, VS> valuesSourceMap, long expectedBucketsCount, AggregationContext aggregationContext, Aggregator parent);
 
 //    private void resolveValuesSourceConfigFromAncestors(String aggName, AggregatorFactory parent, Class<VS> requiredValuesSourceType) {
 //        ValuesSourceConfig config;
