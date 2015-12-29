@@ -44,6 +44,26 @@ You can compute the ratio sum(x) / sum(y) with the following aggregation:
 }
 ``` 
 
+The above will returns the following:
+
+```
+"aggregations": {
+  "metrics": {
+    "sum_x": {
+      "value": 80.0,
+      "doc_count": 6
+    },
+    "sum_y": {
+      "value": 20.0,
+      "doc_count": 6
+    },
+    "ratio": {
+      "value": 4.0
+    }
+  }
+}
+``` 
+
 You can also use it to compute a weighted average: 
 ```
 {
