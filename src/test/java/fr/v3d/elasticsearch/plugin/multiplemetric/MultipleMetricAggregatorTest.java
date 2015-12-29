@@ -62,6 +62,33 @@ public class MultipleMetricAggregatorTest  extends MultipleMetricAggregationTest
         assertEquals(metrics.getDocCount("value1"), 10);
         assertEquals(metrics.getDocCount("value2"), 10);
     }
+    
+    @Test
+    public void assertMultipleMetricAggregationWithScriptError() {
+        String indexName = "test1";
+        int size = 1;
+
+        Map<String, Integer> termsFactor = new HashMap<String, Integer>();
+        termsFactor.put("foo", 1);
+        
+        buildTestDataset(1, indexName, "type1", size, termsFactor);
+        
+        SearchResponse searchResponse = client.prepareSearch(indexName)
+                .setQuery(matchAllQuery())
+                .addAggregation(new MultipleMetricBuilder("metrics")
+                		.script(new ScriptBuilder("ratio").script("value1 / value2"))
+                		.field(new SumBuilder("value1").field("value1"))
+                		.field(new CountBuilder("value2").field("value2").filter(new RangeFilterBuilder("value1").gt(1000))))
+                .execute().actionGet();
+        
+        MultipleMetric metrics = searchResponse.getAggregations().get("metrics");
+        assertEquals(metrics.getValue("value1"), 45.0 * size);
+        assertEquals(metrics.getValue("value2"), 0.0 * size);
+        assertEquals(metrics.getValue("ratio"), Double.POSITIVE_INFINITY);
+        
+        assertEquals(metrics.getDocCount("value1"), 10);
+        assertEquals(metrics.getDocCount("value2"), 0);
+    }
 
     @Test
     public void assertMultipleMetricAggregationWithScriptedField() {

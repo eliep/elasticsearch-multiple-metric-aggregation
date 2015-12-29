@@ -185,8 +185,11 @@ public class InternalMultipleMetric extends InternalNumericMetricsAggregation.Mu
     @Override
     public XContentBuilder doXContentBody(XContentBuilder builder, Params params) throws IOException {
         //builder.startObject(name);
-        for (String metricName : metricsMap.keySet())
-            builder.field(metricName, value(metricName));
+        for (String metricName : metricsMap.keySet()) {
+        	double value = value(metricName);
+    		builder.field(metricName, (value != Double.POSITIVE_INFINITY && value != Double.NEGATIVE_INFINITY) ? value : null);
+        	
+        }
         
         if (countsMap != null && countsMap.size() > 0) {
 	        builder.startObject("doc_count");
