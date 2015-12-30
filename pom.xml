@@ -10,7 +10,7 @@
 
     <groupId>fr.v3d.elasticsearch.plugin</groupId>
     <artifactId>elasticsearch-multiple-metric-aggregation</artifactId>
-    <version>1.4.5</version>
+    <version>1.4.6</version>
 
     <packaging>jar</packaging>
 
@@ -55,6 +55,7 @@
                     <include>es-plugin.properties</include>
                 </includes>
             </resource>
+            
             <resource>
                 <directory>./</directory>
                 <filtering>true</filtering>
