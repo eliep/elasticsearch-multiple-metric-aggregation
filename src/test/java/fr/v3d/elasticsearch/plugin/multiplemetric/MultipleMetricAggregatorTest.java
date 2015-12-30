@@ -68,7 +68,7 @@ public class MultipleMetricAggregatorTest  extends MultipleMetricAggregationTest
     }
     
     @Test
-    public void assertMultipleMetricAggregationWithScriptError() {
+    public void assertMultipleMetricAggregationWithInfinityResult() {
         String indexName = "test1";
         int size = 1;
 
@@ -92,6 +92,34 @@ public class MultipleMetricAggregatorTest  extends MultipleMetricAggregationTest
         
         assertEquals(metrics.getDocCount("value1"), 10);
         assertEquals(metrics.getDocCount("value2"), 0);
+    }
+    
+    @Test
+    public void assertMultipleMetricAggregationWithNaNResult() {
+        String indexName = "test5";
+        int size = 1;
+        int numberOfShards = 1;
+
+        Map<String, Integer> termsFactor = new HashMap<String, Integer>();
+        termsFactor.put("foo", 1);
+        
+        buildTestDataset(numberOfShards, indexName, "type1", size, termsFactor);
+        
+        SearchResponse searchResponse = client.prepareSearch(indexName)
+                .setQuery(matchAllQuery())
+                .addAggregation(new MultipleMetricBuilder("metrics")
+                		.script(new ScriptBuilder("ratio").script("value1 / value2"))
+                		.field(new SumBuilder("value1").field("value1").filter(new RangeFilterBuilder("value1").gt(1000)))
+                		.field(new CountBuilder("value2").field("value2").filter(new RangeFilterBuilder("value1").gt(1000))))
+                .execute().actionGet();
+        
+        MultipleMetric metrics = searchResponse.getAggregations().get("metrics");
+        assertEquals(metrics.getValue("value1"), 0.0 * size);
+        assertEquals(metrics.getValue("value2"), 0.0 * size);
+        assertEquals(metrics.getValue("ratio"), Double.NaN);
+        
+        assertEquals(metrics.getDocCount("value1"), 0 * size);
+        assertEquals(metrics.getDocCount("value2"), 0 * size);
     }
 
     @Test

@@ -188,8 +188,10 @@ public class InternalMultipleMetric extends InternalNumericMetricsAggregation.Mu
     		String metricName = entry.getKey();
         	builder.startObject(metricName);
         	
-        	double value = value(metricName);
-    		builder.field("value", (value != Double.POSITIVE_INFINITY && value != Double.NEGATIVE_INFINITY) ? value : null);
+        	Double value = value(metricName);
+        	if (Double.isInfinite(value) || Double.isNaN(value))
+        		value = null;
+    		builder.field("value", value);
     		
     		if (countsMap != null && !entry.getValue().isScript())
         		builder.field("doc_count", getDocCount(metricName));
