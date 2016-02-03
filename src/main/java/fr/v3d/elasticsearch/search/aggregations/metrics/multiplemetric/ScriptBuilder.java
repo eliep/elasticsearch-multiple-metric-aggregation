@@ -1,31 +1,26 @@
 package fr.v3d.elasticsearch.search.aggregations.metrics.multiplemetric;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 
-import org.elasticsearch.common.collect.Maps;
 import org.elasticsearch.common.xcontent.ToXContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.script.Script;
 
 public class ScriptBuilder implements ToXContent {
 
 	private String name;
 	
-    private String script;
-    private String lang;
+    private Script script;
     private Map<String, Object> params;
 
     public ScriptBuilder(String name) {
     	this.name = name;
     }
 
-    public ScriptBuilder script(String script) {
+    public ScriptBuilder script(Script script) {
         this.script = script;
-        return this;
-    }
-
-    public ScriptBuilder lang(String lang) {
-        this.lang = lang;
         return this;
     }
 
@@ -40,7 +35,7 @@ public class ScriptBuilder implements ToXContent {
 
     public ScriptBuilder param(String name, Object value) {
         if (this.params == null) {
-            this.params = Maps.newHashMap();
+            this.params = new HashMap<String, Object>();
         }
         this.params.put(name, value);
         return this;
@@ -52,16 +47,14 @@ public class ScriptBuilder implements ToXContent {
     		.startObject(name);
         
 	    if (script != null) {
-	        builder.field("script", script);
+	        builder.field(MultipleMetricParam.SCRIPT_FIELD.getPreferredName(), script);
 	    }
-	
-	    if (lang != null) {
-	        builder.field("lang", lang);
-	    }
-	
-	    if (this.params != null && !this.params.isEmpty()) {
-	        builder.field("params").map(this.params);
-	    }
+	    
+        if (this.params != null && !this.params.isEmpty()) {
+            builder
+            	.field(MultipleMetricParam.PARAMS_FIELD.getPreferredName())
+            	.map(this.params);
+        }
 	    
 	    return builder.endObject();
 	}

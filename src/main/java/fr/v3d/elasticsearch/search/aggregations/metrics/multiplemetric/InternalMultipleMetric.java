@@ -10,10 +10,12 @@ import org.elasticsearch.common.io.stream.StreamOutput;
 import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.logging.ESLoggerFactory;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.script.ScriptService;
+import org.elasticsearch.script.Script;
+import org.elasticsearch.script.ScriptContext;
 import org.elasticsearch.search.aggregations.AggregationStreams;
 import org.elasticsearch.search.aggregations.InternalAggregation;
 import org.elasticsearch.search.aggregations.metrics.InternalNumericMetricsAggregation;
+import org.elasticsearch.search.aggregations.pipeline.PipelineAggregator;
 
 public class InternalMultipleMetric extends InternalNumericMetricsAggregation.MultiValue implements MultipleMetric {
 
@@ -23,26 +25,29 @@ public class InternalMultipleMetric extends InternalNumericMetricsAggregation.Mu
     public Map<String, MultipleMetricParam> metricsMap;
     public Map<String, Double> paramsMap;
     public Map<String, Long> countsMap;
-    private ScriptService scriptService;
 
     InternalMultipleMetric() {} // for serialization
 
-    InternalMultipleMetric(String name, Map<String, MultipleMetricParam> metricsMap, Map<String, Long> countsMap) {
-        super(name);
+    InternalMultipleMetric(String name, Map<String, MultipleMetricParam> metricsMap, Map<String, Long> countsMap, 
+    		List<PipelineAggregator> pipelineAggregators, Map<String, Object> metaData) {
+        super(name, pipelineAggregators, metaData);
         this.metricsMap = metricsMap;
         this.countsMap = countsMap;
+        
         this.paramsMap = new HashMap<String, Double>();
+//        for (Map.Entry<String, MultipleMetricParam> entry: metricsMap.entrySet()) {
+//        	if (!entry.getValue().isScript()) {
+//        		this.paramsMap.put(entry.getKey(), 0.0);
+//        	}
+//        }
     }
     
-    InternalMultipleMetric(String name, Map<String, MultipleMetricParam> metricsMap, Map<String, Double> paramsMap, Map<String, Long> countsMap) {
-        super(name);
+    InternalMultipleMetric(String name, Map<String, MultipleMetricParam> metricsMap, Map<String, Double> paramsMap, Map<String, Long> countsMap, 
+    		List<PipelineAggregator> pipelineAggregators, Map<String, Object> metaData) {
+        super(name, pipelineAggregators, metaData);
         this.metricsMap = metricsMap;
         this.paramsMap = paramsMap;
         this.countsMap = countsMap;
-    }
-    
-    public void setScriptService(ScriptService scriptService) {
-        this.scriptService = scriptService;
     }
     
     @Override
@@ -62,33 +67,20 @@ public class InternalMultipleMetric extends InternalNumericMetricsAggregation.Mu
     
     @Override
     public double value(String name) {
-        MultipleMetricParam metric = metricsMap.get(name);
         if (paramsMap.size() == 0)
         	return 0.0;
 
-        Double result = 0.0;
-        if (!metric.isScript()) {
-        	result = (paramsMap.get(name) != null) ? paramsMap.get(name) : 0.0;
-        	
-        } else {
-	        Map<String, Object> scriptParamsMap = metric.scriptParams();
-	        if (scriptParamsMap == null)
-	        	scriptParamsMap = new HashMap<String, Object>();
-	        
-	        scriptParamsMap.putAll(paramsMap);
-	        result = (Double)scriptService.executable(metric.scriptLang(), metric.script(), metric.scriptType(), scriptParamsMap).run();
-        }
-
-        return result;
+        return (paramsMap.get(name) != null) ? paramsMap.get(name) : 0.0;
     }
-
+	
     @Override
-    public InternalMultipleMetric reduce(ReduceContext reduceContext) {
+    public InternalMultipleMetric doReduce(List<InternalAggregation> aggregations, ReduceContext reduceContext) {
+    	logger.info("reduce called");
         InternalMultipleMetric reduced = null;
         
-        List<InternalAggregation> aggregations = reduceContext.aggregations();
         if (aggregations.size() == 1) {
             reduced = (InternalMultipleMetric) aggregations.get(0);
+            
         } else {
         
             for (InternalAggregation aggregation : aggregations) {
@@ -109,14 +101,37 @@ public class InternalMultipleMetric extends InternalNumericMetricsAggregation.Mu
         
         if (reduced == null)
             reduced = (InternalMultipleMetric) aggregations.get(0);
+        
+        
+        Map<String, Double> scriptedMap = new HashMap<String, Double>(); 
+    	for (Map.Entry<String, MultipleMetricParam> entry: metricsMap.entrySet()) {
+    		if (entry.getValue().isScript()) {
+    			MultipleMetricParam metric = entry.getValue();
 
-        reduced.setScriptService(reduceContext.scriptService());
+    	        if (reduced.paramsMap.size() == 0) {
+    	        	scriptedMap.put(entry.getKey(), 0.0);
+    	        	
+    			} else {
+	    			Map<String, Object> scriptParamsMap = metric.scriptParams();
+	    	        if (scriptParamsMap == null)
+	    	        	scriptParamsMap = new HashMap<String, Object>();
+	    	        scriptParamsMap.putAll(reduced.paramsMap);
+	    	        
+	                Script script = new Script(metric.script().getScript(), metric.script().getType(), metric.script().getLang(), scriptParamsMap);
+	                Double result = (Double)reduceContext.scriptService().executable(script, ScriptContext.Standard.AGGS, reduceContext).run();
+	                
+	                scriptedMap.put(entry.getKey(), result);
+    	        }
+    		}
+    	}
+    	
+    	reduced.paramsMap.putAll(scriptedMap);
         
         return reduced;
     }
 
     @Override
-    public void readFrom(StreamInput in) throws IOException {
+    public void doReadFrom(StreamInput in) throws IOException {
         name = in.readString();
         if (in.readBoolean()) {
             int n = in.readInt();
@@ -148,7 +163,7 @@ public class InternalMultipleMetric extends InternalNumericMetricsAggregation.Mu
     }
 
     @Override
-    public void writeTo(StreamOutput out) throws IOException {
+    public void doWriteTo(StreamOutput out) throws IOException {
         out.writeString(name);
         if (paramsMap != null) {
             out.writeBoolean(true);

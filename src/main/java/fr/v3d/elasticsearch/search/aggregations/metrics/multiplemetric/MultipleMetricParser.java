@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.elasticsearch.common.logging.ESLogger;
-import org.elasticsearch.common.logging.ESLoggerFactory;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.search.SearchParseException;
 import org.elasticsearch.search.aggregations.Aggregator;
@@ -44,13 +42,14 @@ public class MultipleMetricParser implements Aggregator.Parser {
         while ((token = parser.nextToken()) != XContentParser.Token.END_OBJECT) {
             if (token == XContentParser.Token.FIELD_NAME) {
                 currentFieldName = parser.currentName();
+                
             } else if (token == XContentParser.Token.START_OBJECT) {
                 MultipleMetricParam metric = MultipleMetricParam.parse(aggregationName, parser, context, currentFieldName);
                 metricsMap.put(currentFieldName, metric);
             	if (!metric.isScript())
             		configMap.put(currentFieldName, metric.vsParser().config());
             } else {
-                throw new SearchParseException(context, "Unexpected token " + token + " in [" + aggregationName + "]");
+                throw new SearchParseException(context, "Unexpected token " + token + " in [" + aggregationName + "]", parser.getTokenLocation());
             }
         }
 
