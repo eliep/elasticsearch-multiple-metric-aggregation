@@ -9,11 +9,12 @@ This plugin add a multi-value metrics aggregation which can define and reuse sev
 | elasticsearch version | latest version |
 | --------------------- | -------------  |
 | 1.4.5+                | 1.4.5          |
+| 2.0+                  | 2.0.0          |
 
 ### Install as plugin 
 
 ```
-bin/plugin --url https://github.com/eliep/elasticsearch-multiple-metric-aggregation/releases/download/1.4.5/elasticsearch-multiple-metric-aggregation-1.4.5.zip install elasticsearch-multiple-metric-aggregation
+bin/plugin --url https://github.com/eliep/elasticsearch-multiple-metric-aggregation/releases/download/2.0.0/elasticsearch-multiple-metric-aggregation-2.0.0.zip install elasticsearch-multiple-metric-aggregation
 ```
 
 ## Examples
