@@ -59,7 +59,7 @@ public class MultipleMetricParam {
     }
     
     public ValuesSourceParser vsParser() {
-    	return vsParser;
+        return vsParser;
     }
     
     public String operator() {
@@ -115,7 +115,7 @@ public class MultipleMetricParam {
                 }
                 
             } else if (token == XContentParser.Token.START_OBJECT) {
-            	if (SUM_TOKEN.equals(currentFieldName)) {
+                if (SUM_TOKEN.equals(currentFieldName)) {
                     operator = currentFieldName;
                     vsParser = parseSum(aggregationName, parser, context); //ValuesSourceParser<ValuesSource.Numeric> 
                 } else if (COUNT_TOKEN.equals(currentFieldName)) {
@@ -128,7 +128,7 @@ public class MultipleMetricParam {
                         throw new SearchParseException(context, "Unknown key for a " + token + " in [" + aggregationName + "]: [" + currentFieldName + "].");
                     }
                 } else if (PARAMS_TOKEN.equals(currentFieldName)) {
-                	scriptParams = parser.map();
+                    scriptParams = parser.map();
                 }
             }
         }
@@ -156,7 +156,7 @@ public class MultipleMetricParam {
     }
     
     public static ValuesSourceParser<ValuesSource.Numeric> parseSum(String aggregationName, XContentParser parser, SearchContext context) 
-    		throws IOException {
+            throws IOException {
 
         ValuesSourceParser<ValuesSource.Numeric> vsParser = ValuesSourceParser.numeric(aggregationName, InternalSum.TYPE, context)
               .build();
@@ -164,18 +164,18 @@ public class MultipleMetricParam {
         XContentParser.Token token;
         String currentFieldName = null;
         while ((token = parser.nextToken()) != XContentParser.Token.END_OBJECT) {
-        	if (token == XContentParser.Token.FIELD_NAME) {
-    			currentFieldName = parser.currentName();
-    		} else if (!vsParser.token(currentFieldName, token, parser)) {
-				throw new SearchParseException(context, "Unexpected token " + token + " in [" + aggregationName + "].");
-    		}
+            if (token == XContentParser.Token.FIELD_NAME) {
+                currentFieldName = parser.currentName();
+            } else if (!vsParser.token(currentFieldName, token, parser)) {
+                throw new SearchParseException(context, "Unexpected token " + token + " in [" + aggregationName + "].");
+            }
         }
         
         return vsParser;
     }
     
     public static ValuesSourceParser parseCount(String aggregationName, XContentParser parser, SearchContext context) 
-    		throws IOException {
+            throws IOException {
 
         ValuesSourceParser vsParser = ValuesSourceParser.any(aggregationName, InternalValueCount.TYPE, context)
               .build();
@@ -183,11 +183,11 @@ public class MultipleMetricParam {
         XContentParser.Token token;
         String currentFieldName = null;
         while ((token = parser.nextToken()) != XContentParser.Token.END_OBJECT) {
-        	if (token == XContentParser.Token.FIELD_NAME) {
-    			currentFieldName = parser.currentName();
-    		} else if (!vsParser.token(currentFieldName, token, parser)) {
-				throw new SearchParseException(context, "Unexpected token " + token + " in [" + aggregationName + "].");
-    		}
+            if (token == XContentParser.Token.FIELD_NAME) {
+                currentFieldName = parser.currentName();
+            } else if (!vsParser.token(currentFieldName, token, parser)) {
+                throw new SearchParseException(context, "Unexpected token " + token + " in [" + aggregationName + "].");
+            }
         }
         
         return vsParser;
@@ -209,13 +209,13 @@ public class MultipleMetricParam {
         
         boolean hasScriptParams = in.readBoolean();
         if (hasScriptParams) {
-        	int size = in.readInt();
-        	metric.scriptParams = new HashMap<String, Object>(size);
-        	for (int i=0; i<size; i++) {
-        		String key = in.readString();
-        		Object value = in.readGenericValue();
-        		metric.scriptParams.put(key, value);
-        	}
+            int size = in.readInt();
+            metric.scriptParams = new HashMap<String, Object>(size);
+            for (int i=0; i<size; i++) {
+                String key = in.readString();
+                Object value = in.readGenericValue();
+                metric.scriptParams.put(key, value);
+            }
         }
         
         return metric;
@@ -244,8 +244,8 @@ public class MultipleMetricParam {
             out.writeBoolean(true);
             out.writeInt(metric.scriptParams.size());
             for (Map.Entry<String, Object> entry: metric.scriptParams.entrySet()) {
-            	out.writeString(entry.getKey());
-            	out.writeGenericValue(entry.getValue());
+                out.writeString(entry.getKey());
+                out.writeGenericValue(entry.getValue());
             }
         } else
             out.writeBoolean(false);

@@ -53,9 +53,9 @@ public class MultipleMetricAggregatorTest  extends MultipleMetricAggregationTest
         SearchResponse searchResponse = client.prepareSearch(indexName)
                 .setQuery(matchAllQuery())
                 .addAggregation(new MultipleMetricBuilder("metrics")
-                		.script(new ScriptBuilder("ratio").script("value1 / value2"))
-                		.field(new SumBuilder("value1").field("value1"))
-                		.field(new CountBuilder("value2").field("value2")))
+                        .script(new ScriptBuilder("ratio").script("value1 / value2"))
+                        .field(new SumBuilder("value1").field("value1"))
+                        .field(new CountBuilder("value2").field("value2")))
                 .execute().actionGet();
         
         MultipleMetric metrics = searchResponse.getAggregations().get("metrics");
@@ -80,9 +80,9 @@ public class MultipleMetricAggregatorTest  extends MultipleMetricAggregationTest
         SearchResponse searchResponse = client.prepareSearch(indexName)
                 .setQuery(matchAllQuery())
                 .addAggregation(new MultipleMetricBuilder("metrics")
-                		.script(new ScriptBuilder("ratio").script("value1 / value2"))
-                		.field(new SumBuilder("value1").field("value1"))
-                		.field(new CountBuilder("value2").field("value2").filter(new RangeFilterBuilder("value1").gt(1000))))
+                        .script(new ScriptBuilder("ratio").script("value1 / value2"))
+                        .field(new SumBuilder("value1").field("value1"))
+                        .field(new CountBuilder("value2").field("value2").filter(new RangeFilterBuilder("value1").gt(1000))))
                 .execute().actionGet();
         
         MultipleMetric metrics = searchResponse.getAggregations().get("metrics");
@@ -108,9 +108,9 @@ public class MultipleMetricAggregatorTest  extends MultipleMetricAggregationTest
         SearchResponse searchResponse = client.prepareSearch(indexName)
                 .setQuery(matchAllQuery())
                 .addAggregation(new MultipleMetricBuilder("metrics")
-                		.script(new ScriptBuilder("ratio").script("value1 / value2"))
-                		.field(new SumBuilder("value1").field("value1").filter(new RangeFilterBuilder("value1").gt(1000)))
-                		.field(new CountBuilder("value2").field("value2").filter(new RangeFilterBuilder("value1").gt(1000))))
+                        .script(new ScriptBuilder("ratio").script("value1 / value2"))
+                        .field(new SumBuilder("value1").field("value1").filter(new RangeFilterBuilder("value1").gt(1000)))
+                        .field(new CountBuilder("value2").field("value2").filter(new RangeFilterBuilder("value1").gt(1000))))
                 .execute().actionGet();
         
         MultipleMetric metrics = searchResponse.getAggregations().get("metrics");
@@ -135,9 +135,9 @@ public class MultipleMetricAggregatorTest  extends MultipleMetricAggregationTest
         SearchResponse searchResponse = client.prepareSearch(indexName)
                 .setQuery(matchAllQuery())
                 .addAggregation(new MultipleMetricBuilder("metrics")
-                		.script(new ScriptBuilder("ratio").script("value1 / value2"))
-                		.field(new SumBuilder("value1").script("doc['value1'].value + doc['value2'].value"))
-                		.field(new CountBuilder("value2").field("value2")))
+                        .script(new ScriptBuilder("ratio").script("value1 / value2"))
+                        .field(new SumBuilder("value1").script("doc['value1'].value + doc['value2'].value"))
+                        .field(new CountBuilder("value2").field("value2")))
                 .execute().actionGet();
         
         MultipleMetric metrics = searchResponse.getAggregations().get("metrics");
@@ -164,9 +164,9 @@ public class MultipleMetricAggregatorTest  extends MultipleMetricAggregationTest
         SearchResponse searchResponse = client.prepareSearch(indexName)
                 .setQuery(matchAllQuery())
                 .addAggregation(new MultipleMetricBuilder("metrics")
-                		.script(new ScriptBuilder("ratio").script("value1 * p / value2").param("p", 2))
-                		.field(new SumBuilder("value1").script("doc['value1'].value + doc['value2'].value"))
-                		.field(new CountBuilder("value2").field("value2")))
+                        .script(new ScriptBuilder("ratio").script("value1 * p / value2").param("p", 2))
+                        .field(new SumBuilder("value1").script("doc['value1'].value + doc['value2'].value"))
+                        .field(new CountBuilder("value2").field("value2")))
                 .execute().actionGet();
         
         MultipleMetric metrics = searchResponse.getAggregations().get("metrics");
@@ -191,9 +191,9 @@ public class MultipleMetricAggregatorTest  extends MultipleMetricAggregationTest
         SearchResponse searchResponse = client.prepareSearch(indexName)
                 .setQuery(matchAllQuery())
                 .addAggregation(new MultipleMetricBuilder("metrics")
-                		.script(new ScriptBuilder("ratio").script("value1 / value2"))
-                		.field(new SumBuilder("value1").field("value1").filter(new RangeFilterBuilder("value1").gt(5)))
-                		.field(new CountBuilder("value2").field("value2")))
+                        .script(new ScriptBuilder("ratio").script("value1 / value2"))
+                        .field(new SumBuilder("value1").field("value1").filter(new RangeFilterBuilder("value1").gt(5)))
+                        .field(new CountBuilder("value2").field("value2")))
                 .execute().actionGet();
         
         MultipleMetric metrics = searchResponse.getAggregations().get("metrics");
@@ -218,9 +218,9 @@ public class MultipleMetricAggregatorTest  extends MultipleMetricAggregationTest
         SearchResponse searchResponse = client.prepareSearch(indexName)
                 .setQuery(matchAllQuery())
                 .addAggregation(new MultipleMetricBuilder("metrics")
-                		.script(new ScriptBuilder("ratio").script("value1 + value2"))
-                		.field(new SumBuilder("value1").field("value4").filter(new RangeFilterBuilder("value1").gt(5)))
-                		.field(new CountBuilder("value2").field("value5")))
+                        .script(new ScriptBuilder("ratio").script("value1 + value2"))
+                        .field(new SumBuilder("value1").field("value4").filter(new RangeFilterBuilder("value1").gt(5)))
+                        .field(new CountBuilder("value2").field("value5")))
                 .execute().actionGet();
         
         MultipleMetric metrics = searchResponse.getAggregations().get("metrics");
@@ -249,9 +249,9 @@ public class MultipleMetricAggregatorTest  extends MultipleMetricAggregationTest
                 .field("field0")
                 .order(Order.aggregation("metrics.ratio", true))
                 .subAggregation(new MultipleMetricBuilder("metrics")
-                		.script(new ScriptBuilder("ratio").script("value1 / value2"))
-                		.field(new SumBuilder("value1").field("value1"))
-                		.field(new CountBuilder("value2").field("value2")));
+                        .script(new ScriptBuilder("ratio").script("value1 / value2"))
+                        .field(new SumBuilder("value1").field("value1"))
+                        .field(new CountBuilder("value2").field("value2")));
 
         SearchResponse searchResponse = client.prepareSearch(indexName)
                 .setQuery(matchAllQuery())
@@ -297,9 +297,9 @@ public class MultipleMetricAggregatorTest  extends MultipleMetricAggregationTest
                 .minDocCount(0L) // we force empty bucket to be returned
                 .order(Order.aggregation("metrics.ratio", true))
                 .subAggregation(new MultipleMetricBuilder("metrics")
-                		.script(new ScriptBuilder("ratio").script("value1 / value2"))
-                		.field(new SumBuilder("value1").field("value1"))
-                		.field(new CountBuilder("value2").field("value2")));
+                        .script(new ScriptBuilder("ratio").script("value1 / value2"))
+                        .field(new SumBuilder("value1").field("value1"))
+                        .field(new CountBuilder("value2").field("value2")));
 
         SearchResponse searchResponse = client.prepareSearch(indexName)
                 .setQuery(QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), new TermFilterBuilder("field0", "buz")))
@@ -343,9 +343,9 @@ public class MultipleMetricAggregatorTest  extends MultipleMetricAggregationTest
                 .field("field0")
                 .order(Order.aggregation("metrics.ratio", true))
                 .subAggregation(new MultipleMetricBuilder("metrics")
-			                		.script(new ScriptBuilder("ratio").script("value1 / value2"))
-			                		.field(new SumBuilder("value1").field("value1"))
-			                		.field(new CountBuilder("value2").field("value2")));
+                                    .script(new ScriptBuilder("ratio").script("value1 / value2"))
+                                    .field(new SumBuilder("value1").field("value1"))
+                                    .field(new CountBuilder("value2").field("value2")));
 
         SearchResponse searchResponse = client.prepareSearch(indexName)
                 .setQuery(matchAllQuery())

@@ -70,7 +70,7 @@ public class MultipleMetricAggregator extends NumericMetricsAggregator.MultiValu
     @Override
     public void setNextReader(AtomicReaderContext reader) {
         for (Entry<String, ValuesSource> entry: valuesSourceMap.entrySet()) {
-        	String key = entry.getKey();
+            String key = entry.getKey();
             try {
                 Bits bits = DocIdSets.toSafeBits(
                         reader.reader(), 
@@ -78,13 +78,13 @@ public class MultipleMetricAggregator extends NumericMetricsAggregator.MultiValu
                 
                 bitsMap.put(key, bits);
                 if (metricParamsMap.get(key).operator().equals(MultipleMetricParser.COUNT_OPERATOR)) {
-                	SortedBinaryDocValues values = ( entry.getValue() != null) ? entry.getValue().bytesValues() : null;
-                	docValuesMap.put(key, values);
+                    SortedBinaryDocValues values = ( entry.getValue() != null) ? entry.getValue().bytesValues() : null;
+                    docValuesMap.put(key, values);
                 } else {
-                	SortedNumericDoubleValues values = ( entry.getValue() != null) 
-                			? ((ValuesSource.Numeric)entry.getValue()).doubleValues()
-        					: null;
-                	doubleValuesMap.put(key, values);
+                    SortedNumericDoubleValues values = ( entry.getValue() != null) 
+                            ? ((ValuesSource.Numeric)entry.getValue()).doubleValues()
+                            : null;
+                    doubleValuesMap.put(key, values);
                 }
             } catch (IOException ioe) {
                 throw new AggregationExecutionException("Failed to aggregate filter aggregator [" + name + "]", ioe);
@@ -136,7 +136,7 @@ public class MultipleMetricAggregator extends NumericMetricsAggregator.MultiValu
         HashMap<String, Double> scriptParamsMap = new HashMap<String, Double>();
         for (Map.Entry<String, MultipleMetricParam> entry: metricParamsMap.entrySet())
             if (!entry.getValue().isScript())
-            	scriptParamsMap.put(entry.getKey(), getMetricValue(entry.getKey(), owningBucketOrdinal));
+                scriptParamsMap.put(entry.getKey(), getMetricValue(entry.getKey(), owningBucketOrdinal));
         
         
         return scriptParamsMap;
@@ -145,7 +145,7 @@ public class MultipleMetricAggregator extends NumericMetricsAggregator.MultiValu
     private Map<String, Long> getCountsMap(long owningBucketOrdinal) {
         HashMap<String, Long> countsMap = new HashMap<String, Long>();
         for (Map.Entry<String, LongArray> entry: metricCountsMap.entrySet())
-        	countsMap.put(entry.getKey(), entry.getValue().get(owningBucketOrdinal));
+            countsMap.put(entry.getKey(), entry.getValue().get(owningBucketOrdinal));
         
         return countsMap;
     }
@@ -153,7 +153,7 @@ public class MultipleMetricAggregator extends NumericMetricsAggregator.MultiValu
     private Map<String, Long> getEmptyCountsMap() {
         HashMap<String, Long> countsMap = new HashMap<String, Long>();
         for (Map.Entry<String, LongArray> entry: metricCountsMap.entrySet())
-        	countsMap.put(entry.getKey(), 0L);
+            countsMap.put(entry.getKey(), 0L);
         
         return countsMap;
     }
@@ -170,7 +170,7 @@ public class MultipleMetricAggregator extends NumericMetricsAggregator.MultiValu
         if (metric.isScript()) {
             Map<String, Object> scriptParamsMap = metric.scriptParams();
             if (scriptParamsMap == null)
-            	scriptParamsMap = new HashMap<String, Object>();
+                scriptParamsMap = new HashMap<String, Object>();
             scriptParamsMap.putAll(getScriptParamsMap(owningBucketOrdinal));
             result = (Double)scriptService.executable(metric.scriptLang(), metric.script(), metric.scriptType(), scriptParamsMap).run();
         } else {

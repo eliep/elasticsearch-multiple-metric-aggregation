@@ -18,13 +18,13 @@ public class MultipleMetricBuilder extends AggregationBuilder<MultipleMetricBuil
     }
     
     public MultipleMetricBuilder field(FieldBuilder fieldBuilder) {
-    	this.metrics.add(fieldBuilder);
-    	return this;
+        this.metrics.add(fieldBuilder);
+        return this;
     }
     
     public MultipleMetricBuilder script(ScriptBuilder scriptBuilder) {
-    	this.metrics.add(scriptBuilder);
-    	return this;
+        this.metrics.add(scriptBuilder);
+        return this;
     }
     
     
@@ -32,7 +32,7 @@ public class MultipleMetricBuilder extends AggregationBuilder<MultipleMetricBuil
     protected XContentBuilder internalXContent(XContentBuilder builder, Params params) throws IOException {
         builder.startObject();
         for (ToXContent toXContent: this.metrics) 
-        	toXContent.toXContent(builder, params);
+            toXContent.toXContent(builder, params);
 
         return builder.endObject();
     }

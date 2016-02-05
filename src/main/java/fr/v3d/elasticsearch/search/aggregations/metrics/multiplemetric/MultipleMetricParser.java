@@ -47,8 +47,8 @@ public class MultipleMetricParser implements Aggregator.Parser {
             } else if (token == XContentParser.Token.START_OBJECT) {
                 MultipleMetricParam metric = MultipleMetricParam.parse(aggregationName, parser, context, currentFieldName);
                 metricsMap.put(currentFieldName, metric);
-            	if (!metric.isScript())
-            		configMap.put(currentFieldName, metric.vsParser().config());
+                if (!metric.isScript())
+                    configMap.put(currentFieldName, metric.vsParser().config());
             } else {
                 throw new SearchParseException(context, "Unexpected token " + token + " in [" + aggregationName + "]");
             }

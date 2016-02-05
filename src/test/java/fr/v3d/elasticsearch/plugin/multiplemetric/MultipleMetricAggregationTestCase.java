@@ -59,15 +59,15 @@ public class MultipleMetricAggregationTestCase extends Assert {
     }
 
     public void deleteIndex(String indexName) {
-    	try {
-	        client.admin().indices()
-	        .prepareDelete(indexName)
-	        .execute().actionGet();
-    	} catch (IndexMissingException ime) { /* ignoring */ }
+        try {
+            client.admin().indices()
+            .prepareDelete(indexName)
+            .execute().actionGet();
+        } catch (IndexMissingException ime) { /* ignoring */ }
     }
     
     public void buildTestDataset(int numberOfShards, String indexName, String typeName, int size, Map<String, Integer> termsFactor) {
-    	deleteIndex(indexName);
+        deleteIndex(indexName);
         createIndex(numberOfShards, indexName);
         
         

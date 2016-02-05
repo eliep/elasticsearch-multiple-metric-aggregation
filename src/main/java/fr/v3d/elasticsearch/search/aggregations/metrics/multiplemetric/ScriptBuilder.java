@@ -9,14 +9,14 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 
 public class ScriptBuilder implements ToXContent {
 
-	private String name;
-	
+    private String name;
+    
     private String script;
     private String lang;
     private Map<String, Object> params;
 
     public ScriptBuilder(String name) {
-    	this.name = name;
+        this.name = name;
     }
 
     public ScriptBuilder script(String script) {
@@ -46,24 +46,24 @@ public class ScriptBuilder implements ToXContent {
         return this;
     }
     
-	@Override
-	public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
+    @Override
+    public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
         builder
-    		.startObject(name);
+            .startObject(name);
         
-	    if (script != null) {
-	        builder.field("script", script);
-	    }
-	
-	    if (lang != null) {
-	        builder.field("lang", lang);
-	    }
-	
-	    if (this.params != null && !this.params.isEmpty()) {
-	        builder.field("params").map(this.params);
-	    }
-	    
-	    return builder.endObject();
-	}
+        if (script != null) {
+            builder.field("script", script);
+        }
+    
+        if (lang != null) {
+            builder.field("lang", lang);
+        }
+    
+        if (this.params != null && !this.params.isEmpty()) {
+            builder.field("params").map(this.params);
+        }
+        
+        return builder.endObject();
+    }
 
 }

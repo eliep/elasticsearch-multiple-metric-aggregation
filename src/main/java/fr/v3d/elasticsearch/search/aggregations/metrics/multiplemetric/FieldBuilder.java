@@ -13,9 +13,9 @@ import org.elasticsearch.search.aggregations.metrics.sum.InternalSum;
 
 public class FieldBuilder implements ToXContent {
 
-	private String name;
-	private String type;
-	
+    private String name;
+    private String type;
+    
     private String field;
     private String script;
     private String lang;
@@ -61,15 +61,15 @@ public class FieldBuilder implements ToXContent {
     }
     
     public FieldBuilder filter(FilterBuilder filter) {
-    	this.filter = filter;
-    	return this;
-	}
+        this.filter = filter;
+        return this;
+    }
 
     @Override
     public final XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
         builder
-        	.startObject(name)
-        	.startObject(type);
+            .startObject(name)
+            .startObject(type);
 
         if (field != null) {
             builder.field("field", field);
