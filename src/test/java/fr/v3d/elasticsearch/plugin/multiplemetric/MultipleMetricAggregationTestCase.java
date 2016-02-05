@@ -1,69 +1,40 @@
 package fr.v3d.elasticsearch.plugin.multiplemetric;
 
-import static org.elasticsearch.common.settings.ImmutableSettings.settingsBuilder;
-import static org.elasticsearch.node.NodeBuilder.nodeBuilder;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import org.elasticsearch.client.Client;
 import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.logging.ESLoggerFactory;
-import org.elasticsearch.common.network.NetworkUtils;
-import org.elasticsearch.common.settings.ImmutableSettings;
-import org.elasticsearch.indices.IndexMissingException;
-import org.elasticsearch.node.Node;
-import org.testng.Assert;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
+import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.test.ESIntegTestCase;
 
-public class MultipleMetricAggregationTestCase extends Assert {
+public class MultipleMetricAggregationTestCase extends ESIntegTestCase {
 
 
     protected final static ESLogger logger = ESLoggerFactory.getLogger("test");
-
-    protected final String CLUSTER = "test-cluster-" + NetworkUtils.getLocalAddress().getHostName();
-
-    private Node node;
-    private Node node2;
-
-    protected Client client;
     
-
-    @BeforeClass
-    public void startNode() {
-        ImmutableSettings.Builder finalSettings = settingsBuilder()
-                .put("cluster.name", CLUSTER)
-                .put("discovery.zen.ping.multicast.enabled", false)
-                .put("node.local", true)
-                .put("gateway.type", "none")
-                .put("script.disable_dynamic", false);
-        node = nodeBuilder().settings(finalSettings.put("node.name", "node1").build()).build().start();
-        node2 = nodeBuilder().settings(finalSettings.put("node.name", "node2").build()).build().start();
-
-        client = node.client();
-    }
-
-    @AfterClass
-    public void stopNode() {
-        node.close();
-        node2.close();
+    
+    @Override
+    protected Settings nodeSettings(int nodeOrdinal) {
+      return Settings.settingsBuilder()
+               .put("plugin.types", MultipleMetricPlugin.class.getName())
+               .put(super.nodeSettings(nodeOrdinal)).build();
     }
     
-
     public void createIndex(int numberOfShards, String indexName) {
-        client.admin().indices()
+    	client().admin().indices()
         .prepareCreate(indexName)
-        .setSettings(ImmutableSettings.settingsBuilder().put("index.number_of_shards", numberOfShards))
+        .setSettings(Settings.settingsBuilder().put("index.number_of_shards", numberOfShards))
         .execute().actionGet();
     }
 
     public void deleteIndex(String indexName) {
     	try {
-	        client.admin().indices()
+    		client().admin().indices()
 	        .prepareDelete(indexName)
 	        .execute().actionGet();
-    	} catch (IndexMissingException ime) { /* ignoring */ }
+    	} catch (Exception e) { /* ignoring */ }
     }
     
     public void buildTestDataset(int numberOfShards, String indexName, String typeName, int size, Map<String, Integer> termsFactor) {
@@ -78,7 +49,7 @@ public class MultipleMetricAggregationTestCase extends Assert {
                     doc.put("field0", entry.getKey());
                     doc.put("value1", j * entry.getValue());
                     doc.put("value2", j * 10 * entry.getValue());
-                    client.prepareIndex(indexName, typeName, ("doc"+entry.getKey()+i)+j).setSource(doc).setRefresh(true).execute().actionGet();
+                    client().prepareIndex(indexName, typeName, ("doc"+entry.getKey()+i)+j).setSource(doc).setRefresh(true).execute().actionGet();
                 }
             }
         }

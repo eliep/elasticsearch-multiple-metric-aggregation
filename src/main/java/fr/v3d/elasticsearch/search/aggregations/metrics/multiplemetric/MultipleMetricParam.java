@@ -4,20 +4,18 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.Query;
+import org.elasticsearch.common.ParseField;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
-import org.elasticsearch.common.logging.ESLogger;
-import org.elasticsearch.common.logging.ESLoggerFactory;
-import org.elasticsearch.common.lucene.search.MatchAllDocsFilter;
 import org.elasticsearch.common.xcontent.XContentParser;
-import org.elasticsearch.index.query.ParsedFilter;
+import org.elasticsearch.index.query.ParsedQuery;
+import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptParameterParser;
 import org.elasticsearch.script.ScriptParameterParser.ScriptParameterValue;
-import org.elasticsearch.script.ScriptService.ScriptType;
 import org.elasticsearch.search.SearchParseException;
 import org.elasticsearch.search.aggregations.metrics.sum.InternalSum;
-import org.elasticsearch.search.aggregations.metrics.sum.SumAggregator;
 import org.elasticsearch.search.aggregations.metrics.valuecount.InternalValueCount;
 import org.elasticsearch.search.aggregations.support.ValuesSource;
 import org.elasticsearch.search.aggregations.support.ValuesSourceParser;
@@ -30,32 +28,33 @@ public class MultipleMetricParam {
     public static final String FILTER_TOKEN = "filter";
     public static final String SCRIPT_TOKEN = "script";
     public static final String PARAMS_TOKEN = "params";
+    public static final ParseField SUM_FIELD = new ParseField("sum");
+    public static final ParseField COUNT_FIELD = new ParseField("count");
+    public static final ParseField FILTER_FIELD = new ParseField("filter");
+    public static final ParseField SCRIPT_FIELD = new ParseField("script");
+    public static final ParseField PARAMS_FIELD = new ParseField("params");
     
     private String operator;
-    private Filter filter;
-    private String script;
-    private ScriptType scriptType;
-    private String scriptLang;
+    private Query filter;
+    private Script script;
     private Map<String, Object> scriptParams;
     private ValuesSourceParser vsParser = null;
     
     public MultipleMetricParam() {}  // for serialization
     
-    public MultipleMetricParam(ValuesSourceParser vsParser, String operator, Filter filter, 
-            String script, ScriptType scriptType, String scriptLang, Map<String, Object> scriptParams) {
+    public MultipleMetricParam(ValuesSourceParser vsParser, String operator, Query filter, 
+    		Script script, Map<String, Object> scriptParams) {
         this.vsParser = vsParser;
         this.operator = operator;
         this.filter = filter;
         this.script = script;
-        this.scriptType = scriptType;
-        this.scriptLang = scriptLang;
         this.scriptParams = scriptParams;
     }
     
-    public MultipleMetricParam(ValuesSourceParser vsParser, String operator, ParsedFilter parsedFilter, 
-            String script, ScriptType scriptType, String scriptLang, Map<String, Object> scriptParams) {
-        this(vsParser, operator, parsedFilter == null ? new MatchAllDocsFilter() : parsedFilter.filter(),
-                script, scriptType, scriptLang, scriptParams);
+    public MultipleMetricParam(ValuesSourceParser vsParser, String operator, ParsedQuery parsedFilter, 
+            Script script, Map<String, Object> scriptParams) {
+        this(vsParser, operator, parsedFilter == null ? new MatchAllDocsQuery() : parsedFilter.query(),
+                script, scriptParams);
     }
     
     public ValuesSourceParser vsParser() {
@@ -66,20 +65,12 @@ public class MultipleMetricParam {
         return operator;
     }
     
-    public Filter filter() {
+    public Query filter() {
         return filter;
     }
     
-    public String script() {
+    public Script script() {
         return script;
-    }
-    
-    public ScriptType scriptType() {
-        return scriptType;
-    }
-    
-    public String scriptLang() {
-        return scriptLang;
     }
     
     public Map<String, Object> scriptParams() {
@@ -97,10 +88,11 @@ public class MultipleMetricParam {
         
         String operator = null;
         ValuesSourceParser vsParser = null;
-        ParsedFilter parsedFilter = null;
+        ParsedQuery parsedFilter = null;
         
         ScriptParameterParser scriptParameterParser = new ScriptParameterParser();
         Map<String, Object> scriptParams = null;
+        Script script = null;
 
 
         while ((token = parser.nextToken()) != XContentParser.Token.END_OBJECT) {
@@ -108,51 +100,49 @@ public class MultipleMetricParam {
             if (token == XContentParser.Token.FIELD_NAME) {
                 currentFieldName = parser.currentName();
             } else if (token == XContentParser.Token.VALUE_STRING) {
-                if (SCRIPT_TOKEN.equals(currentFieldName)) {
-                    if (!scriptParameterParser.token(currentFieldName, token, parser)) {
-                        throw new SearchParseException(context, "Unknown key for a " + token + " in [" + aggregationName + "]: [" + currentFieldName + "].");
+                if (context.parseFieldMatcher().match(currentFieldName, SCRIPT_FIELD)) {
+                    if (!scriptParameterParser.token(currentFieldName, token, parser, context.parseFieldMatcher())) {
+                        throw new SearchParseException(context, "Unknown key for a " + token + " in [" + aggregationName + "]: [" + currentFieldName + "].", parser.getTokenLocation());
+                    
+                    } else {
+                        ScriptParameterValue scriptValue = scriptParameterParser.getScriptParameterValue(SCRIPT_TOKEN);
+                        if (scriptValue != null) {
+                            script = new Script(scriptValue.script(), scriptValue.scriptType(), scriptParameterParser.lang(), null);
+                        }
                     }
                 }
                 
             } else if (token == XContentParser.Token.START_OBJECT) {
-            	if (SUM_TOKEN.equals(currentFieldName)) {
+            	if (context.parseFieldMatcher().match(currentFieldName, SUM_FIELD)) {
                     operator = currentFieldName;
                     vsParser = parseSum(aggregationName, parser, context); //ValuesSourceParser<ValuesSource.Numeric> 
-                } else if (COUNT_TOKEN.equals(currentFieldName)) {
+                    
+                } else if (context.parseFieldMatcher().match(currentFieldName, COUNT_FIELD)) {
                     operator = currentFieldName;
                     vsParser = parseCount(aggregationName, parser, context);
-                } else if (FILTER_TOKEN.equals(currentFieldName)) {
+                    
+                } else if (context.parseFieldMatcher().match(currentFieldName, FILTER_FIELD)) {
                     parsedFilter = context.queryParserService().parseInnerFilter(parser);
-                } else if (SCRIPT_TOKEN.equals(currentFieldName)) {
-                    if (!scriptParameterParser.token(currentFieldName, token, parser)) {
-                        throw new SearchParseException(context, "Unknown key for a " + token + " in [" + aggregationName + "]: [" + currentFieldName + "].");
-                    }
-                } else if (PARAMS_TOKEN.equals(currentFieldName)) {
+                    
+                } else if (context.parseFieldMatcher().match(currentFieldName, SCRIPT_FIELD)) {
+                    script = Script.parse(parser, context.parseFieldMatcher());
+                    
+                } else if (context.parseFieldMatcher().match(currentFieldName, PARAMS_FIELD)) {
                 	scriptParams = parser.map();
                 }
             }
         }
-
-        ScriptParameterValue scriptValue = scriptParameterParser.getDefaultScriptParameterValue();
-        String script = null;
-        ScriptType scriptType = null;
-        String scriptLang = null;
-        if (scriptValue != null) {
-            script = scriptValue.script();
-            scriptType = scriptValue.scriptType();
-            scriptLang = scriptParameterParser.lang();
-        }
-
+        
         if (script == null && vsParser == null)
-            throw new SearchParseException(context, "Metric [" + metricName + "] in [" + aggregationName + "] must either define a field or a script.");
+            throw new SearchParseException(context, "Metric [" + metricName + "] in [" + aggregationName + "] must either define a field or a script.", parser.getTokenLocation());
         
         if (script == null && vsParser != null && operator == null)
-            throw new SearchParseException(context, "Metric [" + metricName + "] in [" + aggregationName + "] must define an aggregator.");
+            throw new SearchParseException(context, "Metric [" + metricName + "] in [" + aggregationName + "] must define an aggregator.", parser.getTokenLocation());
         
         if (operator != null && !MultipleMetricParser.isValidOperator(operator))
-            throw new SearchParseException(context, "Metric [" + metricName + "] in [" + aggregationName + "] define a non valid aggregator: [" + operator + "].");
+            throw new SearchParseException(context, "Metric [" + metricName + "] in [" + aggregationName + "] define a non valid aggregator: [" + operator + "].", parser.getTokenLocation());
         
-        return new MultipleMetricParam(vsParser, operator, parsedFilter, script, scriptType, scriptLang, scriptParams);
+        return new MultipleMetricParam(vsParser, operator, parsedFilter, script, scriptParams);
     }
     
     public static ValuesSourceParser<ValuesSource.Numeric> parseSum(String aggregationName, XContentParser parser, SearchContext context) 
@@ -167,7 +157,7 @@ public class MultipleMetricParam {
         	if (token == XContentParser.Token.FIELD_NAME) {
     			currentFieldName = parser.currentName();
     		} else if (!vsParser.token(currentFieldName, token, parser)) {
-				throw new SearchParseException(context, "Unexpected token " + token + " in [" + aggregationName + "].");
+				throw new SearchParseException(context, "Unexpected token " + token + " in [" + aggregationName + "].", parser.getTokenLocation());
     		}
         }
         
@@ -186,7 +176,7 @@ public class MultipleMetricParam {
         	if (token == XContentParser.Token.FIELD_NAME) {
     			currentFieldName = parser.currentName();
     		} else if (!vsParser.token(currentFieldName, token, parser)) {
-				throw new SearchParseException(context, "Unexpected token " + token + " in [" + aggregationName + "].");
+				throw new SearchParseException(context, "Unexpected token " + token + " in [" + aggregationName + "].", parser.getTokenLocation());
     		}
         }
         
@@ -197,15 +187,7 @@ public class MultipleMetricParam {
         MultipleMetricParam metric = new MultipleMetricParam();
         boolean hasScript = in.readBoolean();
         if (hasScript)
-            metric.script = in.readString();
-        
-        boolean hasScriptLang = in.readBoolean();
-        if (hasScriptLang)
-            metric.scriptLang = in.readString();
-        
-        boolean hasScriptType = in.readBoolean();
-        if (hasScriptType)
-            metric.scriptType = ScriptType.readFrom(in);
+            metric.script = Script.readScript(in);
         
         boolean hasScriptParams = in.readBoolean();
         if (hasScriptParams) {
@@ -224,19 +206,7 @@ public class MultipleMetricParam {
     public static void writeTo(MultipleMetricParam metric, StreamOutput out) throws IOException {
         if (metric.script != null) {
             out.writeBoolean(true);
-            out.writeString(metric.script);
-        } else
-            out.writeBoolean(false);
-        
-        if (metric.scriptLang != null) {
-            out.writeBoolean(true);
-            out.writeString(metric.scriptLang);
-        } else
-            out.writeBoolean(false);
-        
-        if (metric.scriptType != null) {
-            out.writeBoolean(true);
-            ScriptType.writeTo(metric.scriptType, out);
+            metric.script.writeTo(out);
         } else
             out.writeBoolean(false);
         
