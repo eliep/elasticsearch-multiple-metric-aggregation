@@ -10,7 +10,6 @@ import org.elasticsearch.common.io.stream.StreamOutput;
 import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.logging.ESLoggerFactory;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.script.ScriptService;
 import org.elasticsearch.search.aggregations.AggregationStreams;
 import org.elasticsearch.search.aggregations.InternalAggregation;
 import org.elasticsearch.search.aggregations.metrics.InternalNumericMetricsAggregation;
@@ -23,7 +22,6 @@ public class InternalMultipleMetric extends InternalNumericMetricsAggregation.Mu
     public Map<String, MultipleMetricParam> metricsMap;
     public Map<String, Double> paramsMap;
     public Map<String, Long> countsMap;
-    private ScriptService scriptService;
 
     InternalMultipleMetric() {} // for serialization
 
@@ -39,10 +37,6 @@ public class InternalMultipleMetric extends InternalNumericMetricsAggregation.Mu
         this.metricsMap = metricsMap;
         this.paramsMap = paramsMap;
         this.countsMap = countsMap;
-    }
-    
-    public void setScriptService(ScriptService scriptService) {
-        this.scriptService = scriptService;
     }
     
     @Override
@@ -62,24 +56,10 @@ public class InternalMultipleMetric extends InternalNumericMetricsAggregation.Mu
     
     @Override
     public double value(String name) {
-        MultipleMetricParam metric = metricsMap.get(name);
         if (paramsMap.size() == 0)
-        	return 0.0;
-
-        Double result = 0.0;
-        if (!metric.isScript()) {
-        	result = (paramsMap.get(name) != null) ? paramsMap.get(name) : 0.0;
-        	
-        } else {
-	        Map<String, Object> scriptParamsMap = metric.scriptParams();
-	        if (scriptParamsMap == null)
-	        	scriptParamsMap = new HashMap<String, Object>();
-	        
-	        scriptParamsMap.putAll(paramsMap);
-	        result = (Double)scriptService.executable(metric.scriptLang(), metric.script(), metric.scriptType(), scriptParamsMap).run();
-        }
-
-        return result;
+            return 0.0;
+        
+        return (paramsMap.get(name) != null) ? paramsMap.get(name) : 0.0;
     }
 
     @Override
@@ -110,7 +90,28 @@ public class InternalMultipleMetric extends InternalNumericMetricsAggregation.Mu
         if (reduced == null)
             reduced = (InternalMultipleMetric) aggregations.get(0);
 
-        reduced.setScriptService(reduceContext.scriptService());
+        Map<String, Double> scriptedMap = new HashMap<String, Double>(); 
+        for (Map.Entry<String, MultipleMetricParam> entry: metricsMap.entrySet()) {
+            if (entry.getValue().isScript()) {
+                MultipleMetricParam metric = entry.getValue();
+
+                if (reduced.paramsMap.size() == 0) {
+                    scriptedMap.put(entry.getKey(), 0.0);
+                    
+                } else {
+
+                    Map<String, Object> scriptParamsMap = metric.scriptParams();
+                    if (scriptParamsMap == null)
+                        scriptParamsMap = new HashMap<String, Object>();
+                    
+                    scriptParamsMap.putAll(paramsMap);
+                    Double result = (Double)reduceContext.scriptService().executable(metric.scriptLang(), metric.script(), metric.scriptType(), scriptParamsMap).run();
+                    scriptedMap.put(entry.getKey(), result);
+                }
+            }
+        }
+        
+        reduced.paramsMap.putAll(scriptedMap);
         
         return reduced;
     }
@@ -184,19 +185,19 @@ public class InternalMultipleMetric extends InternalNumericMetricsAggregation.Mu
 
     @Override
     public XContentBuilder doXContentBody(XContentBuilder builder, Params params) throws IOException {
-    	for (Map.Entry<String, MultipleMetricParam> entry : metricsMap.entrySet()) {
-    		String metricName = entry.getKey();
-        	builder.startObject(metricName);
-        	
-        	Double value = value(metricName);
-        	if (Double.isInfinite(value) || Double.isNaN(value))
-        		value = null;
-    		builder.field("value", value);
-    		
-    		if (countsMap != null && !entry.getValue().isScript())
-        		builder.field("doc_count", getDocCount(metricName));
-    		
-    		builder.endObject();
+        for (Map.Entry<String, MultipleMetricParam> entry : metricsMap.entrySet()) {
+            String metricName = entry.getKey();
+            builder.startObject(metricName);
+            
+            Double value = value(metricName);
+            if (Double.isInfinite(value) || Double.isNaN(value))
+                value = null;
+            builder.field("value", value);
+            
+            if (countsMap != null && !entry.getValue().isScript())
+                builder.field("doc_count", getDocCount(metricName));
+            
+            builder.endObject();
         }
         
         return builder;
