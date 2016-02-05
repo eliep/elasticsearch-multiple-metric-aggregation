@@ -35,11 +35,6 @@ public class InternalMultipleMetric extends InternalNumericMetricsAggregation.Mu
         this.countsMap = countsMap;
         
         this.paramsMap = new HashMap<String, Double>();
-//        for (Map.Entry<String, MultipleMetricParam> entry: metricsMap.entrySet()) {
-//        	if (!entry.getValue().isScript()) {
-//        		this.paramsMap.put(entry.getKey(), 0.0);
-//        	}
-//        }
     }
     
     InternalMultipleMetric(String name, Map<String, MultipleMetricParam> metricsMap, Map<String, Double> paramsMap, Map<String, Long> countsMap, 

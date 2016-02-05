@@ -82,8 +82,8 @@ public class MultipleMetricAggregator extends NumericMetricsAggregator.MultiValu
     }
 
     @Override
-    public LeafBucketCollector getLeafCollector(LeafReaderContext ctx,
-            final LeafBucketCollector sub) throws IOException {
+    public LeafBucketCollector getLeafCollector(LeafReaderContext ctx, final LeafBucketCollector sub) throws IOException {
+    	
         if (valuesSourceMap == null) {
             return LeafBucketCollector.NO_OP_COLLECTOR;
         }
@@ -225,19 +225,12 @@ public class MultipleMetricAggregator extends NumericMetricsAggregator.MultiValu
             this.metricsMap = metricsMap;
         }
 
-
 		@Override
 		protected Aggregator doCreateInternal(Map<String, ValuesSource> valuesSourceMap,
 				AggregationContext aggregationContext, Aggregator parent, boolean collectsFromSingleBucket,
 				List<PipelineAggregator> pipelineAggregators, Map<String, Object> metaData) throws IOException {
 			return new MultipleMetricAggregator(name, valuesSourceMap, aggregationContext, parent, pipelineAggregators, metaData, this.metricsMap);
 		}
-//        @Override
-//        public Aggregator create(Map<String, ValuesSource> valuesSourceMap, 
-//                long expectedBucketsCount, AggregationContext aggregationContext, Aggregator parent) {
-//            
-//            return new MultipleMetricAggregator(name, expectedBucketsCount, valuesSourceMap, aggregationContext, parent, this.metricsMap);
-//        }
     }
 
     @Override

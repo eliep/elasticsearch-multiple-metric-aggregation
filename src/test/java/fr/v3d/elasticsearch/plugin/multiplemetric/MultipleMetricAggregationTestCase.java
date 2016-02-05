@@ -14,31 +14,6 @@ public class MultipleMetricAggregationTestCase extends ESIntegTestCase {
 
     protected final static ESLogger logger = ESLoggerFactory.getLogger("test");
     
-
-//    @BeforeClass
-//    public void startNode() {
-//        Settings.Builder finalSettings = Settings.settingsBuilder()
-//                .put("cluster.name", CLUSTER)
-//                .put("discovery.zen.ping.multicast.enabled", false)
-//                .put("node.local", true)
-//                .put("script.disable_dynamic", false)
-//        		.put("path.home", "/tmp/data");
-//        node = nodeBuilder().settings(finalSettings.put("node.name", "node1").build()).build().start();
-//        node2 = nodeBuilder().settings(finalSettings.put("node.name", "node2").build()).build().start();
-//
-//        client = node.client();
-//    }
-//
-//    @AfterClass
-//    public void stopNode() {
-//        node.close();
-//        node2.close();
-//    }
-    
-//    @Override
-//    protected Collection<Class<? extends Plugin>> nodePlugins() {
-//      return pluginList(MultipleMetricPlugin.class);
-//    }
     
     @Override
     protected Settings nodeSettings(int nodeOrdinal) {
