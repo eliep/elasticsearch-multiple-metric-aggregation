@@ -194,7 +194,7 @@ public class MultipleMetricAggregator extends NumericMetricsAggregator.MultiValu
             scriptParamsMap.putAll(getScriptParamsMap(owningBucketOrdinal));
             
             Script script = new Script(metric.script().getScript(), metric.script().getType(), metric.script().getLang(), scriptParamsMap);
-            result = (Double)scriptService.executable(script, ScriptContext.Standard.AGGS, context.searchContext(), new HashMap<String, String>()).run();
+            result = (Double)scriptService.executable(script, ScriptContext.Standard.AGGS, context.searchContext()).run();
         } else {
             result = getMetricValue(name, owningBucketOrdinal);
         }
