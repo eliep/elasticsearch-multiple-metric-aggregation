@@ -4,7 +4,16 @@
     <formats>
         <format>zip</format>
     </formats>
-    <includeBaseDirectory>false</includeBaseDirectory>
+    <includeBaseDirectory>false</includeBaseDirectory>  <fileSets>
+    <fileSet>
+      <directory>${project.basedir}</directory>
+      <includes>
+        <include>plugin-descriptor.properties</include>
+      </includes>
+      <filtered>true</filtered>
+      <useDefaultExcludes>true</useDefaultExcludes>
+    </fileSet>
+    </fileSets>
     <dependencySets>
         <dependencySet>
             <outputDirectory>/</outputDirectory>
