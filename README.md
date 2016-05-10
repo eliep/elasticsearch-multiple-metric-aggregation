@@ -10,6 +10,7 @@ This plugin add a multi-value metrics aggregation which can define and reuse sev
 | --------------------- | -------------  |
 | 1.4.5+                | 1.4.7          |
 | 2.0+                  | 2.0.0          |
+| 2.2+                  | 2.2.0          |
 | 2.3+                  | 2.3.1          |
 
 ### Install as plugin 
