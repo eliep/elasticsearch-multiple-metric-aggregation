@@ -1,25 +1,36 @@
 package fr.v3d.elasticsearch.plugin.multiplemetric;
 
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.logging.ESLoggerFactory;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.plugins.Plugin;
+import org.elasticsearch.script.groovy.GroovyPlugin;
 import org.elasticsearch.test.ESIntegTestCase;
 
 public class MultipleMetricAggregationTestCase extends ESIntegTestCase {
 
 
     protected final static ESLogger logger = ESLoggerFactory.getLogger("test");
-    
-    
+
     @Override
     protected Settings nodeSettings(int nodeOrdinal) {
       return Settings.settingsBuilder()
-               .put("plugin.types", MultipleMetricPlugin.class.getName())
-               .put(super.nodeSettings(nodeOrdinal)).build();
+               .put(super.nodeSettings(nodeOrdinal))
+               .put(   "script.inline", "true")
+               .put(   "script.indexed", "true")
+               .put(   "script.file", "true")
+               .put(   "script.engine.groovy.inline.search", "true")
+               .build();
+    }
+    
+    @Override
+    protected Collection<Class<? extends Plugin>> nodePlugins() {
+      return pluginList(GroovyPlugin.class, MultipleMetricPlugin.class);
     }
     
     public void createIndex(int numberOfShards, String indexName) {

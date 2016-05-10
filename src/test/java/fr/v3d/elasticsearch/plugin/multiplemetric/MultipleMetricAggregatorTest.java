@@ -15,6 +15,7 @@ import org.elasticsearch.action.admin.cluster.node.info.NodesInfoResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.index.query.TermQueryBuilder;
+import org.elasticsearch.plugins.PluginInfo;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms.Order;
@@ -28,10 +29,17 @@ public class MultipleMetricAggregatorTest  extends MultipleMetricAggregationTest
         NodesInfoResponse nodesInfoResponse = client().admin().cluster().prepareNodesInfo()
                 .clear().setPlugins(true).get();
         logger.info("{}", nodesInfoResponse);
-        assertNotNull(nodesInfoResponse.getNodes()[0].getPlugins().getInfos());
-        assertEquals(1, nodesInfoResponse.getNodes()[0].getPlugins().getInfos().size());
-        assertEquals("multiple-metric-aggregation", nodesInfoResponse.getNodes()[0].getPlugins().getInfos().get(0).getName());
-        assertEquals(false, nodesInfoResponse.getNodes()[0].getPlugins().getInfos().get(0).isSite());
+        assertNotNull(nodesInfoResponse.getNodes()[0].getPlugins().getPluginInfos());
+        boolean hasGroovy = false;
+        boolean hasMultipleMetricAggregation = false;
+        for (PluginInfo info: nodesInfoResponse.getNodes()[0].getPlugins().getPluginInfos()) {
+            if (info.getName().equals("lang-groovy"))
+                hasGroovy = true;
+            if (info.getName().equals("multiple-metric-aggregation"))
+                hasMultipleMetricAggregation = true;
+        }
+        assertTrue(hasGroovy);
+        assertTrue(hasMultipleMetricAggregation);
     }
 
 	@Test

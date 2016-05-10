@@ -113,7 +113,7 @@ public class InternalMultipleMetric extends InternalNumericMetricsAggregation.Mu
 	    	        scriptParamsMap.putAll(reduced.paramsMap);
 	    	        
 	                Script script = new Script(metric.script().getScript(), metric.script().getType(), metric.script().getLang(), scriptParamsMap);
-	                Double result = (Double)reduceContext.scriptService().executable(script, ScriptContext.Standard.AGGS, reduceContext).run();
+	                Double result = (Double)reduceContext.scriptService().executable(script, ScriptContext.Standard.AGGS, reduceContext, new HashMap<String, String>()).run();
 	                
 	                scriptedMap.put(entry.getKey(), result);
     	        }

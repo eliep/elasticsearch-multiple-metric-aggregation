@@ -96,7 +96,7 @@ public class MultipleMetricAggregator extends NumericMetricsAggregator.MultiValu
         
         for (Entry<String, ValuesSource> entry: valuesSourceMap.entrySet()) {
         	String key = entry.getKey();
-            Bits bits = Lucene.asSequentialAccessBits(ctx.reader().maxDoc(), weightMap.get(key).scorer(ctx, null));
+            Bits bits = Lucene.asSequentialAccessBits(ctx.reader().maxDoc(), weightMap.get(key).scorer(ctx));
             bitsMap.put(key, bits);
             
             if (metricParamsMap.get(key).operator().equals(MultipleMetricParser.COUNT_OPERATOR)) {
@@ -194,7 +194,7 @@ public class MultipleMetricAggregator extends NumericMetricsAggregator.MultiValu
             scriptParamsMap.putAll(getScriptParamsMap(owningBucketOrdinal));
             
             Script script = new Script(metric.script().getScript(), metric.script().getType(), metric.script().getLang(), scriptParamsMap);
-            result = (Double)scriptService.executable(script, ScriptContext.Standard.AGGS, context.searchContext()).run();
+            result = (Double)scriptService.executable(script, ScriptContext.Standard.AGGS, context.searchContext(), new HashMap<String, String>()).run();
         } else {
             result = getMetricValue(name, owningBucketOrdinal);
         }
