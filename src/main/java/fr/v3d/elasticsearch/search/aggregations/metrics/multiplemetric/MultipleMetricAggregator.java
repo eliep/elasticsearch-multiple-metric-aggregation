@@ -93,9 +93,10 @@ public class MultipleMetricAggregator extends NumericMetricsAggregator.MultiValu
         final Map<String, SortedNumericDoubleValues> doubleValuesMap = new HashMap<String, SortedNumericDoubleValues>();
         final Map<String, SortedBinaryDocValues> docValuesMap = new HashMap<String, SortedBinaryDocValues>();
         final Map<String, Bits> bitsMap = new HashMap<String, Bits>();
-        
+
         for (Entry<String, ValuesSource> entry: valuesSourceMap.entrySet()) {
         	String key = entry.getKey();
+            logger.error("{} {}", key, entry.getValue());
             Bits bits = Lucene.asSequentialAccessBits(ctx.reader().maxDoc(), weightMap.get(key).scorer(ctx));
             bitsMap.put(key, bits);
             
@@ -164,8 +165,12 @@ public class MultipleMetricAggregator extends NumericMetricsAggregator.MultiValu
 
     private Map<String, Long> getCountsMap(long owningBucketOrdinal) {
         HashMap<String, Long> countsMap = new HashMap<String, Long>();
-        for (Map.Entry<String, LongArray> entry: metricCountsMap.entrySet())
-        	countsMap.put(entry.getKey(), entry.getValue().get(owningBucketOrdinal));
+        for (Map.Entry<String, LongArray> entry: metricCountsMap.entrySet()) {
+            long count = (owningBucketOrdinal >= entry.getValue().size())
+                    ? 0L
+                    : entry.getValue().get(owningBucketOrdinal);
+        	countsMap.put(entry.getKey(), count);
+        }
         
         return countsMap;
     }
@@ -204,16 +209,6 @@ public class MultipleMetricAggregator extends NumericMetricsAggregator.MultiValu
 
     @Override
     public InternalAggregation buildAggregation(long owningBucketOrdinal) {
-        long maxSize = -1L;
-        for (Entry<String, LongArray> e: metricCountsMap.entrySet()) {
-            LongArray counts = e.getValue();
-            if (counts.size() > maxSize)
-                maxSize = counts.size();
-        }
-
-        if (owningBucketOrdinal >= maxSize) {
-            return buildEmptyAggregation();
-        }
 
         HashMap<String, Double> scriptParamsMap = getScriptParamsMap(owningBucketOrdinal);
         Map<String, Long> countsMap = getCountsMap(owningBucketOrdinal);

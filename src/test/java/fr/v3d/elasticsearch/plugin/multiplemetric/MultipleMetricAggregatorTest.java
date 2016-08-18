@@ -89,6 +89,9 @@ public class MultipleMetricAggregatorTest  extends MultipleMetricAggregationTest
                                 .field("value1")
                                 .filter(new RangeQueryBuilder("value1").lt(0))
                         )
+                        .field(new CountBuilder("value1c")
+                                .field("value1")
+                        )
                 );
 
         SearchResponse searchResponse = client().prepareSearch(indexName)
@@ -106,6 +109,8 @@ public class MultipleMetricAggregatorTest  extends MultipleMetricAggregationTest
             MultipleMetric metrics = terms.getBucketByKey(term).getAggregations().get("metrics");
             assertEquals(metrics.getValue("value1"), 0.0, 0.0);
             assertEquals(metrics.getDocCount("value1"), 0);
+            assertEquals(metrics.getValue("value1c"), 10.0, 0.0);
+            assertEquals(metrics.getDocCount("value1c"), 10);
         }
     }
 
