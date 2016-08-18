@@ -7,6 +7,7 @@ import fr.v3d.elasticsearch.search.aggregations.metrics.multiplemetric.ScriptBui
 import fr.v3d.elasticsearch.search.aggregations.metrics.multiplemetric.SumBuilder;
 
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -67,6 +68,45 @@ public class MultipleMetricAggregatorTest  extends MultipleMetricAggregationTest
         
         assertEquals(metrics.getDocCount("value1"), 10);
         assertEquals(metrics.getDocCount("value2"), 10);
+    }
+
+
+    @Test
+    public void assertMultipleMetricAggregationWithEmptyFilter() {
+        String indexName = "test1";
+        int size = 1;
+
+        Map<String, Integer> termsFactor = new HashMap<String, Integer>();
+        termsFactor.put("foo", 1);
+        termsFactor.put("bar", 1);
+
+        buildTestDataset(1, indexName, "type1", size, termsFactor);
+
+        TermsBuilder termsBuilder = new TermsBuilder("group_by")
+                .field("field0")
+                .subAggregation(new MultipleMetricBuilder("metrics")
+                        .field(new SumBuilder("value1")
+                                .field("value1")
+                                .filter(new RangeQueryBuilder("value1").lt(0))
+                        )
+                );
+
+        SearchResponse searchResponse = client().prepareSearch(indexName)
+                .setQuery(matchAllQuery()) //termQuery("field0", "foo")
+                .addAggregation(termsBuilder)
+                .execute().actionGet();
+
+        Terms terms = searchResponse.getAggregations().get("group_by");
+        for (Map.Entry<String, Integer> entry: termsFactor.entrySet()) {
+            String term = entry.getKey();
+            assertNotNull(terms.getBucketByKey(term));
+            assertNotNull(terms.getBucketByKey(term).getAggregations());
+            assertNotNull(terms.getBucketByKey(term).getAggregations().get("metrics"));
+
+            MultipleMetric metrics = terms.getBucketByKey(term).getAggregations().get("metrics");
+            assertEquals(metrics.getValue("value1"), 0.0, 0.0);
+            assertEquals(metrics.getDocCount("value1"), 0);
+        }
     }
 
 	@Test

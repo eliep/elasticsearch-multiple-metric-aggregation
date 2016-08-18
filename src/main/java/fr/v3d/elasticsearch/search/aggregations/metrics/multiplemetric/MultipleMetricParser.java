@@ -21,8 +21,7 @@ public class MultipleMetricParser implements Aggregator.Parser {
     
     public static final String SUM_OPERATOR = "sum";
     public static final String COUNT_OPERATOR = "count";
-    
-    @Override
+
     public String type() {
         return InternalMultipleMetric.TYPE.name();
     }
@@ -30,8 +29,7 @@ public class MultipleMetricParser implements Aggregator.Parser {
     public static boolean isValidOperator(String operator) {
         return (operator.equals(SUM_OPERATOR) || operator.equals(COUNT_OPERATOR));
     }
-    
-    @Override
+
     public AggregatorFactory parse(String aggregationName, XContentParser parser, SearchContext context) throws IOException {
        
         XContentParser.Token token;

@@ -87,7 +87,7 @@ public class MultipleMetricAggregator extends NumericMetricsAggregator.MultiValu
         if (valuesSourceMap == null) {
             return LeafBucketCollector.NO_OP_COLLECTOR;
         }
-        
+
         final BigArrays bigArrays = context.bigArrays();
 
         final Map<String, SortedNumericDoubleValues> doubleValuesMap = new HashMap<String, SortedNumericDoubleValues>();
@@ -204,9 +204,20 @@ public class MultipleMetricAggregator extends NumericMetricsAggregator.MultiValu
 
     @Override
     public InternalAggregation buildAggregation(long owningBucketOrdinal) {
+        long maxSize = -1L;
+        for (Entry<String, LongArray> e: metricCountsMap.entrySet()) {
+            LongArray counts = e.getValue();
+            if (counts.size() > maxSize)
+                maxSize = counts.size();
+        }
+
+        if (owningBucketOrdinal >= maxSize) {
+            return buildEmptyAggregation();
+        }
+
         HashMap<String, Double> scriptParamsMap = getScriptParamsMap(owningBucketOrdinal);
         Map<String, Long> countsMap = getCountsMap(owningBucketOrdinal);
-        
+
         return new InternalMultipleMetric(name, metricParamsMap, scriptParamsMap, countsMap, pipelineAggregators(), metaData());
     }
 

@@ -50,12 +50,10 @@ public class InternalMultipleMetric extends InternalNumericMetricsAggregation.Mu
         return TYPE;
     }
 
-    @Override
     public double getValue(String name) {
         return value(name);
     }
 
-    @Override
     public long getDocCount(String name) {
         return (countsMap.get(name) != null) ? countsMap.get(name) : 0;
     }
@@ -215,7 +213,7 @@ public class InternalMultipleMetric extends InternalNumericMetricsAggregation.Mu
 
     
     public final static AggregationStreams.Stream STREAM = new AggregationStreams.Stream() {
-        @Override
+
         public InternalMultipleMetric readResult(StreamInput in) throws IOException {
             InternalMultipleMetric result = new InternalMultipleMetric();
             result.readFrom(in);
