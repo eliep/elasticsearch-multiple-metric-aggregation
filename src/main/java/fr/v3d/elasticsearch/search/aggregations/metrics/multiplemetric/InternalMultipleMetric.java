@@ -17,6 +17,8 @@ import org.elasticsearch.search.aggregations.InternalAggregation;
 import org.elasticsearch.search.aggregations.metrics.InternalNumericMetricsAggregation;
 import org.elasticsearch.search.aggregations.pipeline.PipelineAggregator;
 
+import static java.lang.Double.NaN;
+
 public class InternalMultipleMetric extends InternalNumericMetricsAggregation.MultiValue implements MultipleMetric {
 
     protected final static ESLogger logger = ESLoggerFactory.getLogger("test");
@@ -35,6 +37,8 @@ public class InternalMultipleMetric extends InternalNumericMetricsAggregation.Mu
         this.countsMap = countsMap;
         
         this.paramsMap = new HashMap<String, Double>();
+        for (Map.Entry<String, MultipleMetricParam> entry: metricsMap.entrySet())
+            this.paramsMap.put(entry.getKey(), 0.0);
     }
     
     InternalMultipleMetric(String name, Map<String, MultipleMetricParam> metricsMap, Map<String, Double> paramsMap, Map<String, Long> countsMap, 
@@ -63,12 +67,11 @@ public class InternalMultipleMetric extends InternalNumericMetricsAggregation.Mu
         if (paramsMap.size() == 0)
         	return 0.0;
 
-        return (paramsMap.get(name) != null) ? paramsMap.get(name) : 0.0;
+        return (paramsMap.get(name) != null && !paramsMap.get(name).isNaN()) ? paramsMap.get(name) : 0.0;
     }
 	
     @Override
     public InternalMultipleMetric doReduce(List<InternalAggregation> aggregations, ReduceContext reduceContext) {
-    	logger.info("reduce called");
         InternalMultipleMetric reduced = null;
         
         if (aggregations.size() == 1) {

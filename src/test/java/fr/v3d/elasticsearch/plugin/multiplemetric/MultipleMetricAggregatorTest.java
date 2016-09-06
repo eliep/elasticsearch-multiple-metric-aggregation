@@ -18,6 +18,11 @@ import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.plugins.PluginInfo;
 import org.elasticsearch.script.Script;
+import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramBuilder;
+import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
+import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
+import org.elasticsearch.search.aggregations.bucket.range.Range;
+import org.elasticsearch.search.aggregations.bucket.range.RangeBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms.Order;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsBuilder;
@@ -111,6 +116,60 @@ public class MultipleMetricAggregatorTest  extends MultipleMetricAggregationTest
             assertEquals(metrics.getDocCount("value1"), 0);
             assertEquals(metrics.getValue("value1c"), 10.0, 0.0);
             assertEquals(metrics.getDocCount("value1c"), 10);
+        }
+    }
+
+
+    @Test
+    public void assertMultipleMetricAggregationWithParentRangeAggregation() {
+        String indexName = "test1";
+        int size = 1;
+
+        Map<String, Integer> termsFactor = new HashMap<String, Integer>();
+        termsFactor.put("foo", 1);
+        termsFactor.put("bar", 1);
+
+        buildTestDataset(1, indexName, "type1", size, termsFactor);
+
+        RangeBuilder rangeBuilder = new RangeBuilder("ranges")
+                .addRange(0, 100).addRange(100, 200).addRange(200, 300).addRange(300, 400).addRange(400, 500)
+                .field("value2")
+                .subAggregation(new MultipleMetricBuilder("metrics")
+                        .script(new ScriptBuilder("ratio").script(new Script("value1 / value1c")))
+                        .field(new SumBuilder("value1")
+                                .field("value1")
+                        )
+                        .field(new CountBuilder("value1c")
+                                .field("value1")
+                        )
+                );
+
+        DateHistogramBuilder dateHistogramBuilder = new DateHistogramBuilder("dates")
+                .interval(DateHistogramInterval.DAY)
+                .field("date")
+                .subAggregation(rangeBuilder);
+
+
+        SearchResponse searchResponse = client().prepareSearch(indexName)
+                .setQuery(matchAllQuery()) //termQuery("field0", "foo")
+                .addAggregation(dateHistogramBuilder)
+                .execute().actionGet();
+
+        Histogram dates = searchResponse.getAggregations().get("dates");
+        for (Histogram.Bucket date: dates.getBuckets() ) {
+            Range buckets = date.getAggregations().get("ranges");
+
+            for (Range.Bucket bucket : buckets.getBuckets()) {
+                MultipleMetric metrics = bucket.getAggregations().get("metrics");
+                if (bucket.getFromAsString().equals("0.0") && bucket.getToAsString().equals("100.0")) {
+                    assertEquals(90.0, metrics.getValue("value1"), 0.0);
+                    assertEquals(20.0, metrics.getValue("value1c"), 0.0);
+                } else {
+                    assertEquals(0.0, metrics.getValue("value1"), 0.0);
+                    assertEquals(0.0, metrics.getValue("value1c"), 0.0);
+                }
+
+            }
         }
     }
 

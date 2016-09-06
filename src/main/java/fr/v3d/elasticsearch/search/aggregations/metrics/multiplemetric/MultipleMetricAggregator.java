@@ -96,7 +96,6 @@ public class MultipleMetricAggregator extends NumericMetricsAggregator.MultiValu
 
         for (Entry<String, ValuesSource> entry: valuesSourceMap.entrySet()) {
         	String key = entry.getKey();
-            logger.error("{} {}", key, entry.getValue());
             Bits bits = Lucene.asSequentialAccessBits(ctx.reader().maxDoc(), weightMap.get(key).scorer(ctx));
             bitsMap.put(key, bits);
             
@@ -218,7 +217,6 @@ public class MultipleMetricAggregator extends NumericMetricsAggregator.MultiValu
 
     @Override
     public InternalAggregation buildEmptyAggregation() {
-    	logger.info("empty aggregation");
         return new InternalMultipleMetric(name, metricParamsMap, getEmptyCountsMap(), pipelineAggregators(), metaData());
     }
     

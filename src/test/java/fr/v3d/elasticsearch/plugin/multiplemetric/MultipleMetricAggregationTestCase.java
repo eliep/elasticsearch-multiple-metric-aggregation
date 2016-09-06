@@ -1,9 +1,7 @@
 package fr.v3d.elasticsearch.plugin.multiplemetric;
 
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.logging.ESLoggerFactory;
@@ -51,12 +49,12 @@ public class MultipleMetricAggregationTestCase extends ESIntegTestCase {
     public void buildTestDataset(int numberOfShards, String indexName, String typeName, int size, Map<String, Integer> termsFactor) {
     	deleteIndex(indexName);
         createIndex(numberOfShards, indexName);
-        
-        
+
         for (int i=0; i < size; i++) {
             for (Map.Entry<String, Integer> entry: termsFactor.entrySet()) {
                 for (int j = 0; j < 10; j++) {
                     Map<String, Object> doc = new HashMap<String, Object>();
+                    doc.put("date", new GregorianCalendar(2015, 10, 1).getTime());
                     doc.put("field0", entry.getKey());
                     doc.put("value1", j * entry.getValue());
                     doc.put("value2", j * 10 * entry.getValue());
