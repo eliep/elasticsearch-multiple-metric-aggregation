@@ -41,7 +41,6 @@ public class ScriptBuilder implements ToXContent {
         return this;
     }
     
-	@Override
 	public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
         builder
     		.startObject(name);
